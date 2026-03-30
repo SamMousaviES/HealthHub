@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ app_title }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="login-shell">
+  <main class="login-panel login-panel-wide">
+    <div class="eyebrow">{{ public_host }}</div>
+    <h1>{{ app_title }}</h1>
+    <p class="muted">Health, diet, gym, coach, and server controls in one private dashboard.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-stack compact">
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <div class="auth-grid">
+      <section class="auth-card{{ ' active' if active_auth_panel == 'login' else '' }}">
+        <div class="content-kicker">Sign In</div>
+        <h2>Welcome back</h2>
+        <p class="muted">Existing users can sign in with the same username and password as before. Usernames are case-insensitive.</p>
+        <form method="post" action="{{ url_for('login') }}" class="login-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label>
+            <span>Username</span>
+            <input type="text" name="username" autocomplete="username" value="{{ login_username }}" required>
+          </label>
+          <label>
+            <span>Password</span>
+            <input type="password" name="password" autocomplete="current-password" required>
+          </label>
+          <button type="submit" class="primary">Enter Dashboard</button>
+        </form>
+      </section>
+
+      {% if allow_registration %}
+        <section class="auth-card{{ ' active' if active_auth_panel == 'register' else '' }}">
+          <div class="content-kicker">Register</div>
+          <h2>Create a new user</h2>
+          <p class="muted">New users start as members without the Servers tab. Capture the main body profile now so Diet, Gym, and Health start with real data.</p>
+          <form method="post" action="{{ url_for('register') }}" class="login-form auth-form-register">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div class="form-grid tight">
+              <label>
+                <span>Name</span>
+                <input type="text" name="first_name" autocomplete="given-name" value="{{ register_data.first_name }}" required>
+              </label>
+              <label>
+                <span>Family</span>
+                <input type="text" name="last_name" autocomplete="family-name" value="{{ register_data.last_name }}" required>
+              </label>
+              <label>
+                <span>Username</span>
+                <input type="text" name="username" autocomplete="username" value="{{ register_data.username }}" required>
+              </label>
+              <label>
+                <span>Password</span>
+                <input type="password" name="password" autocomplete="new-password" required>
+              </label>
+              <label>
+                <span>Confirm Password</span>
+                <input type="password" name="password_confirm" autocomplete="new-password" required>
+              </label>
+              <label>
+                <span>Gender</span>
+                <select name="gender">
+                  {% for option in gender_options %}
+                    <option value="{{ option.value }}" {% if register_data.gender == option.value %}selected{% endif %}>{{ option.label }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+              <label>
+                <span>Height (cm)</span>
+                <input type="number" name="height_cm" min="100" max="250" step="0.1" value="{{ register_data.height_cm }}" required>
+              </label>
+              <label>
+                <span>Age</span>
+                <input type="number" name="age_years" min="10" max="120" step="1" value="{{ register_data.age_years }}" required>
+              </label>
+              <label>
+                <span>Current Weight (kg)</span>
+                <input type="number" name="current_weight_kg" min="30" max="300" step="0.1" value="{{ register_data.current_weight_kg }}" required>
+              </label>
+              <label>
+                <span>Goal</span>
+                <select name="goal">
+                  {% for option in goal_options %}
+                    <option value="{{ option.value }}" {% if register_data.goal == option.value %}selected{% endif %}>{{ option.label }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+              <label>
+                <span>Meals / Day</span>
+                <select name="preferred_meals_per_day">
+                  {% for option in meal_count_options %}
+                    <option value="{{ option.value }}" {% if register_data.preferred_meals_per_day == option.value|string %}selected{% endif %}>{{ option.label }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+            </div>
+            <button type="submit" class="primary">Create Account</button>
+          </form>
+        </section>
+      {% endif %}
+    </div>
+  </main>
+</body>
+</html>

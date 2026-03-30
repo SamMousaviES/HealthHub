@@ -1,0 +1,2532 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ app_title }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <svg class="service-symbols" aria-hidden="true" focusable="false">
+    <symbol id="icon-cloud" viewBox="0 0 24 24">
+      <path d="M7 18a4 4 0 1 1 .9-7.9A5.5 5.5 0 0 1 18 12a3.5 3.5 0 1 1-.5 6H7z"></path>
+    </symbol>
+    <symbol id="icon-files" viewBox="0 0 24 24">
+      <path d="M8 7h8l3 3v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"></path>
+      <path d="M16 7v3h3"></path>
+      <path d="M10 13h4"></path>
+      <path d="M10 16h5"></path>
+    </symbol>
+    <symbol id="icon-workflow" viewBox="0 0 24 24">
+      <circle cx="6" cy="6" r="2"></circle>
+      <circle cx="18" cy="7" r="2"></circle>
+      <circle cx="8" cy="18" r="2"></circle>
+      <circle cx="18" cy="18" r="2"></circle>
+      <path d="M8 6h8"></path>
+      <path d="M7 8l1 8"></path>
+      <path d="M10 18h6"></path>
+      <path d="M18 9v7"></path>
+    </symbol>
+    <symbol id="icon-terminal" viewBox="0 0 24 24">
+      <path d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"></path>
+      <path d="M7 10l3 2-3 2"></path>
+      <path d="M12 14h5"></path>
+    </symbol>
+    <symbol id="icon-shield" viewBox="0 0 24 24">
+      <path d="M12 3l7 3v6c0 4.6-2.7 7.7-7 9-4.3-1.3-7-4.4-7-9V6l7-3z"></path>
+      <path d="M9.5 12.5l1.8 1.8 3.7-4.1"></path>
+    </symbol>
+    <symbol id="icon-layout" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+      <path d="M9 4v16"></path>
+      <path d="M9 9h12"></path>
+    </symbol>
+    <symbol id="icon-bot" viewBox="0 0 24 24">
+      <rect x="5" y="8" width="14" height="10" rx="3"></rect>
+      <path d="M12 4v4"></path>
+      <path d="M8 3l4 1 4-1"></path>
+      <circle cx="10" cy="13" r="1"></circle>
+      <circle cx="14" cy="13" r="1"></circle>
+      <path d="M9.5 16h5"></path>
+    </symbol>
+    <symbol id="icon-audio" viewBox="0 0 24 24">
+      <path d="M5 10v4"></path>
+      <path d="M9 7v10"></path>
+      <path d="M13 5v14"></path>
+      <path d="M17 8v8"></path>
+      <path d="M21 10v4"></path>
+    </symbol>
+    <symbol id="icon-notebook" viewBox="0 0 24 24">
+      <rect x="5" y="4" width="14" height="16" rx="2"></rect>
+      <path d="M9 4v16"></path>
+      <path d="M11.5 9h4"></path>
+      <path d="M11.5 13h4"></path>
+      <path d="M11.5 17h3"></path>
+    </symbol>
+    <symbol id="icon-monitor" viewBox="0 0 24 24">
+      <rect x="3" y="5" width="18" height="12" rx="2"></rect>
+      <path d="M8 20h8"></path>
+      <path d="M12 17v3"></path>
+      <path d="M8 10l2.5 2.5L14 9"></path>
+    </symbol>
+    <symbol id="icon-arrows" viewBox="0 0 24 24">
+      <path d="M7 7h10"></path>
+      <path d="M14 4l3 3-3 3"></path>
+      <path d="M17 17H7"></path>
+      <path d="M10 20l-3-3 3-3"></path>
+    </symbol>
+    <symbol id="icon-talk" viewBox="0 0 24 24">
+      <path d="M5 7a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3h-3l-4 4v-4H8a3 3 0 0 1-3-3V7z"></path>
+      <path d="M11 9h.01"></path>
+      <path d="M15 9h.01"></path>
+    </symbol>
+    <symbol id="icon-copy" viewBox="0 0 24 24">
+      <rect x="9" y="9" width="10" height="11" rx="2"></rect>
+      <path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"></path>
+    </symbol>
+  </svg>
+  <header class="topbar">
+    <div class="topbar-main">
+      <div>
+        <div class="eyebrow">{{ state.viewer_display_name }} dashboard</div>
+        <h1>{{ app_title }}</h1>
+        <p class="muted" data-role="refresh-note">Last refresh {{ state.updated_at }}. Live update every {{ state.client_poll_seconds }} seconds.</p>
+      </div>
+      <form method="post" action="{{ url_for('logout') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit" class="ghost">Log Out</button>
+      </form>
+    </div>
+    <div class="calendar-grid" data-role="calendar-panel" aria-live="polite">
+      <section class="calendar-panel">
+        <div class="calendar-label">Local Time</div>
+        <strong class="calendar-time" data-role="gregorian-time">--:--:--</strong>
+        <small class="calendar-date" data-role="gregorian-date">--</small>
+      </section>
+      <section class="calendar-panel">
+        <div class="calendar-label">Tehran's Time</div>
+        <strong class="calendar-time" data-role="jalali-time">--:--:--</strong>
+        <small class="calendar-date" data-role="jalali-date">--</small>
+      </section>
+    </div>
+  </header>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <section class="flash-stack">
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      </section>
+    {% endif %}
+  {% endwith %}
+
+  <nav class="section-tabs" aria-label="Primary sections" data-role="section-tabs">
+    {% for section in state.sections %}
+      <button
+        type="button"
+        class="section-tab{{ ' active' if section.id == state.default_tab else '' }}"
+        id="tab-{{ section.id }}"
+        data-tab-target="{{ section.id }}"
+        role="tab"
+        aria-selected="{{ 'true' if section.id == state.default_tab else 'false' }}"
+        aria-controls="panel-{{ section.id }}"
+      >
+        {{ section.label }}
+      </button>
+    {% endfor %}
+  </nav>
+
+  <main class="section-panels">
+    <section
+      class="tab-panel{{ ' active' if state.default_tab == 'diet' else '' }}"
+      id="panel-diet"
+      data-tab-panel="diet"
+      role="tabpanel"
+      aria-labelledby="tab-diet"
+      {% if state.default_tab != 'diet' %}hidden{% endif %}
+    >
+      {% set diet = state.diet %}
+      <div class="content-shell diet-shell">
+        <article class="content-card content-card-wide diet-hero">
+          <div class="content-kicker">Diet Agent</div>
+          <div class="card-head">
+            <div>
+              <h2>Today's simple meal plan</h2>
+              <p class="muted">Built from your Health profile, current weight, target weight, and preferred meal count. The coach can also change today's food focus or your regular diet preferences from chat.</p>
+            </div>
+            <div class="status-pill {{ diet.plan.status_class }}">{{ diet.plan.status_label }}</div>
+          </div>
+          <div class="summary-grid compact">
+            <div class="summary-tile">
+              <span>Current Weight</span>
+              <strong>{{ ('%.1f kg'|format(diet.plan.current_weight_kg)) if diet.plan.current_weight_kg is not none else 'Add weight in Health' }}</strong>
+            </div>
+            <div class="summary-tile">
+              <span>Target Weight</span>
+              <strong>{{ ('%.1f kg'|format(diet.plan.desired_weight_kg)) if diet.plan.desired_weight_kg is not none else 'Waiting for target' }}</strong>
+            </div>
+            <div class="summary-tile">
+              <span>Maintenance</span>
+              <strong>{{ diet.plan.maintenance_calories }} kcal</strong>
+            </div>
+            <div class="summary-tile">
+              <span>Plan / Target</span>
+              <strong>{{ diet.plan.total_calories }} / {{ diet.plan.target_calories }} kcal</strong>
+            </div>
+            <div class="summary-tile">
+              <span>Consumed Today</span>
+              <strong>{{ diet.plan.progress.consumed_calories }} kcal</strong>
+            </div>
+            <div class="summary-tile">
+              <span>{{ diet.plan.adjustment_label }}</span>
+              <strong>{{ diet.plan.adjustment_text }}</strong>
+            </div>
+            <div class="summary-tile">
+              <span>Protein Target</span>
+              <strong>{{ diet.plan.target_protein_g }} g</strong>
+            </div>
+            <div class="summary-tile">
+              <span>Meals Today</span>
+              <strong>{{ diet.plan.meal_count }}</strong>
+            </div>
+            <div class="summary-tile">
+              <span>Meal Progress</span>
+              <strong>{{ diet.plan.progress_text }}</strong>
+            </div>
+            <div class="summary-tile">
+              <span>Plan Date</span>
+              <strong>{{ diet.today_label }}</strong>
+            </div>
+          </div>
+          <p class="muted">{{ diet.plan.rationale_text }}</p>
+          {% if diet.plan.active_preference_labels %}
+            <p class="muted"><strong>Active focus:</strong> {{ diet.plan.active_preference_labels|join(', ') }}</p>
+          {% endif %}
+          {% if diet.needs_profile_setup %}
+            <p class="muted">Add your current weight in Health for a tighter calorie estimate. Until then, the Diet Agent uses a conservative starter target.</p>
+          {% endif %}
+        </article>
+
+        <article class="content-card content-card-wide diet-message-card">
+          <div class="content-kicker">Sentence of the Day</div>
+          <h2>Stay consistent today</h2>
+          <p class="diet-message">{{ diet.plan.message_text }}</p>
+        </article>
+
+        <section class="flash-stack compact diet-feedback" data-role="diet-feedback" hidden></section>
+
+        <div class="diet-meal-grid content-card-wide">
+          {% for meal in diet.plan.meals %}
+            <article class="content-card diet-meal-card">
+              <div class="content-kicker">{{ meal.meal_label }}</div>
+              {% if meal.meal_time_text %}
+                <p class="diet-meal-time">{{ meal.meal_time_text }}</p>
+              {% endif %}
+              <div class="card-head">
+                <div>
+                  <h2>{{ meal.meal_title }}</h2>
+                  <p class="muted">{{ meal.meal_summary }}</p>
+                </div>
+                <div class="diet-meal-head-meta">
+                  <div class="diet-calorie-pill">{{ meal.calories }} kcal</div>
+                  <div class="diet-status-pill diet-status-{{ meal.status }}">{{ 'Complete' if meal.is_done else 'Skipped' if meal.is_skipped else 'Partial' if meal.is_partial else 'Pending' }}</div>
+                </div>
+              </div>
+              <div class="diet-macro-row">
+                <span>{{ meal.protein_g }} g protein</span>
+                <span>{{ meal.carbs_g }} g carbs</span>
+                <span>{{ meal.fat_g }} g fat</span>
+              </div>
+              <div class="diet-meal-actions">
+                <small class="exercise-status-label">Status: {{ 'Complete' if meal.is_done else 'Skipped' if meal.is_skipped else 'Partial' if meal.is_partial else 'Pending' }}</small>
+                <small class="muted">{{ meal.item_summary.done_count }}/{{ meal.item_summary.total_count }} items checked, {{ '%.0f'|format(meal.consumed_calories) }} kcal counted</small>
+              </div>
+              <div class="diet-meal-block">
+                <strong>Items</strong>
+                <div class="diet-item-list">
+                  {% for item in meal.get('items', []) %}
+                    <form method="post" action="{{ url_for('diet_item') }}" class="diet-item-row diet-item-row-{{ item.status }} diet-item-form" data-role="diet-item-form">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                      <input type="hidden" name="return_tab" value="diet">
+                      <input type="hidden" name="meal_item_id" value="{{ item.id }}">
+                      <div class="diet-item-copy">
+                        <span>{{ item.item_text }}</span>
+                        <small>{{ item.calories_text }}</small>
+                      </div>
+                      <div class="exercise-action-buttons diet-item-actions">
+                        <button
+                          type="submit"
+                          name="intent"
+                          value="done"
+                          class="{{ 'primary saved-tick is-active' if item.is_done else 'ghost save-tick' }}"
+                          aria-label="{{ 'Uncheck' if item.is_done else 'Check' }} {{ item.item_text }}"
+                          data-role="diet-item-submit"
+                        >
+                          &#10003;
+                        </button>
+                      </div>
+                    </form>
+                  {% endfor %}
+                </div>
+              </div>
+              <div class="diet-meal-block">
+                <strong>Prep</strong>
+                <p>{{ meal.prep_text }}</p>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+
+        <div class="diet-analytics-grid content-card-wide">
+          <article class="content-card diet-nutrient-card">
+            <div class="content-kicker">Nutrients</div>
+            <div class="card-head">
+              <div>
+                <h2>Today vs target</h2>
+                <p class="muted">Only ingredient items marked done count as received. Targets scale from your Health profile, weight, height, and today's calorie goal.</p>
+              </div>
+            </div>
+            <div class="diet-nutrient-list">
+              {% if diet.calorie_card %}
+                <article class="diet-nutrient-row">
+                  <div class="diet-nutrient-head">
+                    <div>
+                      <strong>{{ diet.calorie_card.label }}</strong>
+                      <small>{{ diet.calorie_card.description }}</small>
+                    </div>
+                    <div class="diet-nutrient-values">
+                      <strong>{{ diet.calorie_card.current_text }}</strong>
+                      <span>of {{ diet.calorie_card.target_text }}</span>
+                    </div>
+                  </div>
+                  <div class="diet-nutrient-track" aria-hidden="true">
+                    <span class="diet-nutrient-fill" style="width: {{ '%.1f'|format(diet.calorie_card.percent) }}%"></span>
+                  </div>
+                  <small class="muted">{{ diet.calorie_card.percent_text }} reached</small>
+                </article>
+              {% endif %}
+              {% for nutrient in diet.nutrient_cards %}
+                <article class="diet-nutrient-row">
+                  <div class="diet-nutrient-head">
+                    <div>
+                      <strong>{{ nutrient.label }}</strong>
+                      <small>{{ nutrient.description }}</small>
+                    </div>
+                    <div class="diet-nutrient-values">
+                      <strong>{{ nutrient.current_text }}</strong>
+                      <span>of {{ nutrient.target_text }}</span>
+                    </div>
+                  </div>
+                  <div class="diet-nutrient-track" aria-hidden="true">
+                    <span class="diet-nutrient-fill" style="width: {{ '%.1f'|format(nutrient.percent) }}%"></span>
+                  </div>
+                  <small class="muted">{{ nutrient.percent_text }} reached</small>
+                </article>
+              {% endfor %}
+            </div>
+          </article>
+
+          <article
+            class="content-card diet-history-card"
+            data-role="diet-history-card"
+            data-history-points='{{ diet.history_panel.points|tojson }}'
+            data-history-unit="{{ diet.history_panel.unit }}"
+            data-history-default-range="{{ diet.history_panel.default_range }}"
+          >
+            <div class="content-kicker">History</div>
+            <div class="card-head">
+              <div>
+                <h2>Diet history</h2>
+                <p class="muted">Range filters keep the view readable as the diet database grows over time.</p>
+              </div>
+              <div class="diet-history-range-group" role="group" aria-label="Diet history range">
+                <button type="button" class="ghost is-active" data-role="diet-history-range" data-range="week">Week</button>
+                <button type="button" class="ghost" data-role="diet-history-range" data-range="month">Month</button>
+                <button type="button" class="ghost" data-role="diet-history-range" data-range="year">Year</button>
+                <button type="button" class="ghost" data-role="diet-history-range" data-range="all">All</button>
+              </div>
+            </div>
+            <div class="diet-history-summary" data-role="diet-history-summary">
+              <div class="summary-tile compact">
+                <span>Average Intake</span>
+                <strong data-role="diet-history-average">No data yet</strong>
+              </div>
+              <div class="summary-tile compact">
+                <span>Average Target</span>
+                <strong data-role="diet-history-target">No data yet</strong>
+              </div>
+              <div class="summary-tile compact">
+                <span>Range</span>
+                <strong data-role="diet-history-count">{{ diet.history_panel.point_count }} days</strong>
+              </div>
+            </div>
+            <article class="health-chart-card diet-history-chart">
+              <div class="card-head">
+                <div>
+                  <strong>Calories taken</strong>
+                  <p class="muted">Filtered daily intake against your stored calorie target.</p>
+                </div>
+                <div class="health-chart-latest" data-role="diet-history-latest">{{ diet.history_panel.latest_value_text }}</div>
+              </div>
+              <div class="health-chart-stage">
+                <svg
+                  class="health-chart-svg"
+                  data-role="diet-history-svg"
+                  viewBox="0 0 320 160"
+                  preserveAspectRatio="none"
+                  role="img"
+                  aria-label="Diet history chart"
+                ></svg>
+                <div class="health-chart-tooltip" data-role="diet-history-tooltip" hidden></div>
+              </div>
+              <small class="muted" data-role="diet-history-caption">
+                {% if diet.history_panel.point_count %}
+                  Latest {{ diet.history_panel.latest_value_text }}
+                {% else %}
+                  Mark meals done on more than one day to build history.
+                {% endif %}
+              </small>
+            </article>
+          </article>
+        </div>
+
+      </div>
+    </section>
+
+    <section
+      class="tab-panel{{ ' active' if state.default_tab == 'gym' else '' }}"
+      id="panel-gym"
+      data-tab-panel="gym"
+      role="tabpanel"
+      aria-labelledby="tab-gym"
+      {% if state.default_tab != 'gym' %}hidden{% endif %}
+    >
+      {% set gym = state.gym %}
+      <div class="content-shell gym-shell">
+        <article class="content-card content-card-wide">
+          <div class="content-kicker">Gym</div>
+          <div class="card-head">
+            <div>
+              <h2>{{ gym.plan.heading }}</h2>
+              <p class="muted">Built from your saved profile and workout history. Use Today for the live planner, or open one of the last saved days to review previous sessions. When a session is fully resolved, the next split can open immediately on Today.</p>
+            </div>
+            <div class="status-pill {{ gym.plan.status_class }}">{{ gym.plan.status_label }}</div>
+          </div>
+          <div class="summary-grid">
+            <div class="summary-tile">
+              <span>Current Split</span>
+              <strong>{{ gym.plan.title }}</strong>
+            </div>
+            <div class="summary-tile">
+              <span>Duration</span>
+              <strong>{{ gym.plan.duration_text }}</strong>
+            </div>
+            <div class="summary-tile">
+              <span>Progress</span>
+              <strong>{{ gym.plan.progress_text }}</strong>
+            </div>
+            <div class="summary-tile">
+              <span>Estimated Burn</span>
+              <strong>{{ gym.plan.burn_summary.summary_text }}</strong>
+              <small>{{ gym.plan.burn_summary.note }}</small>
+            </div>
+            <div class="summary-tile">
+              <span>Equipment</span>
+              <strong>{{ gym.plan.equipment_summary }}</strong>
+            </div>
+          </div>
+          <div class="gym-session-nav">
+            <div class="gym-session-nav-head">
+              <div>
+                <strong>Sessions</strong>
+                <small>{{ gym.session_nav.selected_label }}</small>
+              </div>
+              <small>
+                {% if gym.session_nav.history_count %}
+                  Planner + last {{ gym.session_nav.history_count }} saved day{{ '' if gym.session_nav.history_count == 1 else 's' }}
+                {% else %}
+                  Planner view only for now
+                {% endif %}
+              </small>
+            </div>
+            <div class="gym-session-chip-list" role="navigation" aria-label="Gym session history">
+              {% set planner = gym.session_nav.planner_item %}
+              <a
+                href="{{ url_for('index', tab='gym', gym_day=planner.value) }}"
+                class="ghost gym-session-chip gym-session-chip-planner{{ ' is-active' if planner.is_active else '' }}"
+                aria-current="{{ 'page' if planner.is_active else 'false' }}"
+              >
+                <span class="gym-session-chip-kicker">{{ planner.kicker }}</span>
+                <strong>{{ planner.label }}</strong>
+                <small>{{ planner.meta }}</small>
+              </a>
+              {% for item in gym.session_nav["items"] %}
+                <a
+                  href="{{ url_for('index', tab='gym', gym_day=item.value) }}"
+                  class="ghost gym-session-chip{{ ' is-active' if item.is_active else '' }}"
+                  aria-current="{{ 'page' if item.is_active else 'false' }}"
+                >
+                  <span class="gym-session-chip-kicker">{{ item.kicker }}</span>
+                  <strong>{{ item.label }}</strong>
+                  <small>{{ item.meta }}</small>
+                </a>
+              {% endfor %}
+            </div>
+          </div>
+          {% if gym.plan.override_notes %}
+            <p class="muted"><strong>Coach changes:</strong> {{ gym.plan.override_notes|join(' ') }}</p>
+          {% endif %}
+          <section class="flash-stack compact gym-feedback" data-role="gym-feedback" hidden></section>
+          <div class="exercise-list">
+              {% for exercise in gym.plan.exercise_rows %}
+                <form method="post" action="{{ url_for('gym_exercise') }}" class="exercise-row exercise-form" data-role="gym-exercise-form">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                  <input type="hidden" name="return_tab" value="gym">
+                  <input type="hidden" name="gym_day" value="{{ gym.session_nav.selected_day }}">
+                  <input type="hidden" name="split_key" value="{{ gym.plan.split_key }}">
+                  <input type="hidden" name="performed_on" value="{{ gym.plan.performed_on }}">
+                  <input type="hidden" name="exercise_name" value="{{ exercise.exercise_name }}">
+                  <div class="exercise-copy">
+                    <button
+                      type="button"
+                      class="exercise-name-button"
+                      data-exercise-name="{{ exercise.exercise_name }}"
+                      data-image-urls="{{ exercise.image_urls|join('||') }}"
+                      data-instructions='{{ exercise.instructions|tojson }}'
+                      data-image-source-name="{{ exercise.image_source_name }}"
+                      data-image-source-url="{{ exercise.image_source_url }}"
+                      aria-label="Show image for {{ exercise.exercise_name }}"
+                    >
+                      {{ exercise.exercise_name }}
+                    </button>
+                    <small>{{ exercise.sets_text }} x {{ exercise.reps_text }} • Rest {{ exercise.rest_text }} • {{ exercise.equipment_type|replace('_', ' ')|title }}</small>
+                    <small>Suggested load: {{ ('%.1f kg'|format(exercise.suggested_weight_kg)) if exercise.suggested_weight_kg is not none else 'Bodyweight / as tolerated' }}</small>
+                    <small class="exercise-status-label">Status: {{ 'Done' if exercise.status == 'done' else 'Skipped' if exercise.status == 'skipped' else 'Pending' }}</small>
+                    <div class="exercise-save exercise-save-{{ exercise.status }}">
+                      <input
+                        type="number"
+                        name="weight_kg"
+                        min="0"
+                        step="0.5"
+                        inputmode="decimal"
+                        value="{{ exercise.input_weight_kg or (exercise.suggested_weight_kg if exercise.suggested_weight_kg is not none else '') }}"
+                        placeholder="{{ exercise.suggested_weight_kg if exercise.suggested_weight_kg is not none else '' }}"
+                        aria-label="Saved load for {{ exercise.exercise_name }}"
+                      >
+                      <div class="exercise-action-buttons">
+                        <button
+                          type="submit"
+                          name="intent"
+                          value="done"
+                          class="{{ 'primary saved-tick is-active' if exercise.is_saved else 'ghost save-tick' }}"
+                          aria-label="{{ 'Toggle done off for' if exercise.is_saved else 'Mark done for' }} {{ exercise.exercise_name }}"
+                        >
+                          &#10003;
+                        </button>
+                        <button
+                          type="submit"
+                          name="intent"
+                          value="skip"
+                          class="{{ 'warn skip-tick is-active' if exercise.is_skipped else 'ghost skip-tick' }}"
+                          aria-label="{{ 'Undo skip for' if exercise.is_skipped else 'Skip' }} {{ exercise.exercise_name }}"
+                        >
+                          Skip
+                        </button>
+                      </div>
+                    </div>
+                    <div
+                      class="exercise-trend-card"
+                      data-role="exercise-trend-card"
+                      data-trend-label="{{ exercise.exercise_name }}"
+                      data-trend-unit="kg"
+                      data-trend-points='{{ exercise.history_points|tojson }}'
+                    >
+                      <div class="exercise-trend-head">
+                        <small>
+                          {{ exercise.history_point_count }} saved lift{{ '' if exercise.history_point_count == 1 else 's' }}
+                          {% if exercise.history_point_count %}
+                            • Latest {{ exercise.history_latest_text }}
+                          {% endif %}
+                        </small>
+                      </div>
+                      <div class="exercise-trend-stage">
+                        <svg
+                          class="exercise-trend-svg"
+                          data-role="exercise-trend-svg"
+                          viewBox="0 0 320 92"
+                          preserveAspectRatio="none"
+                          role="img"
+                          aria-label="{{ exercise.exercise_name }} weight trend"
+                        ></svg>
+                        <div class="exercise-trend-tooltip" data-role="exercise-trend-tooltip" hidden></div>
+                      </div>
+                      <small class="muted" data-role="exercise-trend-caption">
+                        {% if exercise.history_point_count %}
+                          Recent weight trend for this movement.
+                        {% else %}
+                          Mark this movement done a few times to build a trend graph.
+                        {% endif %}
+                      </small>
+                    </div>
+                  </div>
+                </form>
+              {% endfor %}
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section
+      class="tab-panel{{ ' active' if state.default_tab == 'health' else '' }}"
+      id="panel-health"
+      data-tab-panel="health"
+      role="tabpanel"
+      aria-labelledby="tab-health"
+      {% if state.default_tab != 'health' %}hidden{% endif %}
+    >
+      {% set health = state.health %}
+      <div class="content-shell health-shell">
+        <article class="content-card content-card-wide">
+          <div class="content-kicker">Health</div>
+          <div class="card-head">
+            <div>
+              <h2>{{ health.profile.display_name }}</h2>
+              <p class="muted">This is the body profile that powers your gym plan and Diet Agent. Save age, weight, measurements, gender, goals, and meals per day here, and edit the profile any time.</p>
+            </div>
+            <div class="status-pill partial">{{ health.profile.goal_label }}</div>
+          </div>
+          <div class="summary-grid compact">
+            <div class="summary-tile">
+              <span>Height</span>
+              <strong>{{ ('%.1f cm'|format(health.profile.height_cm)) if health.profile.height_cm is not none else 'Add height' }}</strong>
+            </div>
+            <div class="summary-tile">
+              <span>Age</span>
+              <strong>{{ ('%.0f years'|format(health.profile.age_years)) if health.profile.age_years is not none else 'Add age' }}</strong>
+            </div>
+            <div class="summary-tile">
+              <span>Current Weight</span>
+              <strong>{{ ('%.1f kg'|format(health.profile.current_weight_kg)) if health.profile.current_weight_kg is not none else 'Add current weight' }}</strong>
+            </div>
+            <div class="summary-tile">
+              <span>Gender</span>
+              <strong>{{ health.profile.gender_label }}</strong>
+            </div>
+            <div class="summary-tile">
+              <span>AI Target</span>
+              <strong>{{ ('%.1f kg'|format(health.recommended_target.recommended_weight_kg)) if health.recommended_target.recommended_weight_kg is not none else 'Suggested after height' }}</strong>
+            </div>
+            <div class="summary-tile">
+              <span>BMI</span>
+              <strong>{{ health.bmi if health.bmi is not none else 'Need height + weight' }}</strong>
+            </div>
+            <div class="summary-tile">
+              <span>Meals / Day</span>
+              <strong>{{ health.profile.preferred_meals_per_day }}</strong>
+            </div>
+            <div class="summary-tile">
+              <span>Last Check-in</span>
+              <strong>{{ health.latest_measurement.measured_on if health.latest_measurement else 'No check-ins yet' }}</strong>
+            </div>
+          </div>
+          <p class="muted">{{ health.recommended_target.range_text }}</p>
+          <p class="muted">{{ health.recommended_target.note }}</p>
+          <details class="profile-settings" {% if health.needs_profile_setup %}open{% endif %}>
+            <summary>Health &amp; Profile Settings</summary>
+            <form method="post" action="{{ url_for('gym_profile') }}" class="dashboard-form profile-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="return_tab" value="health">
+              <div class="form-grid">
+                <label>
+                  <span>First Name</span>
+                  <input type="text" name="first_name" autocomplete="given-name" value="{{ health.profile.first_name }}">
+                </label>
+                <label>
+                  <span>Family Name</span>
+                  <input type="text" name="last_name" autocomplete="family-name" value="{{ health.profile.last_name }}">
+                </label>
+                <label>
+                  <span>Height (cm)</span>
+                  <input type="number" name="height_cm" min="100" max="250" step="0.1" value="{{ health.profile.height_cm if health.profile.height_cm is not none else '' }}">
+                </label>
+                <label>
+                  <span>Age</span>
+                  <input type="number" name="age_years" min="10" max="120" step="1" value="{{ health.profile.age_years if health.profile.age_years is not none else '' }}">
+                </label>
+                <label>
+                  <span>Current Weight (kg)</span>
+                  <input type="number" name="current_weight_kg" min="30" max="250" step="0.1" value="{{ health.profile.current_weight_kg if health.profile.current_weight_kg is not none else '' }}">
+                </label>
+                <label>
+                  <span>Gender</span>
+                  <select name="gender">
+                    {% for option in health.gender_options %}
+                      <option value="{{ option.value }}" {{ 'selected' if option.value == health.profile.gender else '' }}>{{ option.label }}</option>
+                    {% endfor %}
+                  </select>
+                </label>
+                <label>
+                  <span>Goal</span>
+                  <select name="goal">
+                    {% for option in health.goal_options %}
+                      <option value="{{ option.value }}" {{ 'selected' if option.value == health.profile.goal else '' }}>{{ option.label }}</option>
+                    {% endfor %}
+                  </select>
+                </label>
+                <label>
+                  <span>Preferred Session (min)</span>
+                  <input type="number" name="preferred_session_minutes" min="30" max="180" step="5" value="{{ health.profile.preferred_session_minutes }}">
+                </label>
+                <label>
+                  <span>Training Days / Week</span>
+                  <input type="number" name="training_days_per_week" min="1" max="7" step="1" value="{{ health.profile.training_days_per_week }}">
+                </label>
+                <label>
+                  <span>Meals / Day</span>
+                  <select name="preferred_meals_per_day">
+                    {% for option in health.meal_count_options %}
+                      <option value="{{ option.value }}" {{ 'selected' if option.value == health.profile.preferred_meals_per_day else '' }}>{{ option.label }}</option>
+                    {% endfor %}
+                  </select>
+                </label>
+                <label class="form-span-2">
+                  <span>Profile Notes</span>
+                  <textarea name="notes" rows="3">{{ health.profile.notes }}</textarea>
+                </label>
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="primary">Save Profile</button>
+              </div>
+            </form>
+          </details>
+        </article>
+
+        <article class="content-card content-card-wide checkin-card">
+          <div class="content-kicker">Check-in</div>
+          <h2>Record Weight &amp; Measurements</h2>
+          <p class="muted">Save a quick health check-in to track weight and body changes over time.</p>
+          <form method="post" action="{{ url_for('health_measurement') }}" class="dashboard-form profile-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="return_tab" value="health">
+            <div class="form-grid checkin-grid">
+              <label>
+                <span>Date</span>
+                <input type="date" name="measured_on" value="{{ health.today_iso }}">
+              </label>
+              <label>
+                <span>Weight (kg)</span>
+                <input type="number" name="weight_kg" min="0" max="300" step="0.1" inputmode="decimal">
+              </label>
+              <label>
+                <span>Arm (cm)</span>
+                <input type="number" name="arm_cm" min="0" max="100" step="0.1" inputmode="decimal">
+              </label>
+              <label>
+                <span>Chest (cm)</span>
+                <input type="number" name="chest_cm" min="0" max="200" step="0.1" inputmode="decimal">
+              </label>
+              <label>
+                <span>Waist (cm)</span>
+                <input type="number" name="waist_cm" min="0" max="200" step="0.1" inputmode="decimal">
+              </label>
+              <label>
+                <span>Thigh (cm)</span>
+                <input type="number" name="thigh_cm" min="0" max="120" step="0.1" inputmode="decimal">
+              </label>
+              <label>
+                <span>Calf (cm)</span>
+                <input type="number" name="calf_cm" min="0" max="100" step="0.1" inputmode="decimal">
+              </label>
+              <label class="form-span-2">
+                <span>Note</span>
+                <textarea name="note" rows="3" placeholder="Optional context like energy, soreness, sleep, or how the weigh-in felt."></textarea>
+              </label>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="primary">Save Check-in</button>
+            </div>
+          </form>
+        </article>
+
+        <article class="content-card content-card-wide">
+          <div class="content-kicker">Trends</div>
+          <h2>Interactive Health Trends</h2>
+          <p class="muted">Every saved measurement stays in the database. Hover or tap a point to inspect the recorded value for each body metric.</p>
+          <div class="health-chart-grid">
+            {% for chart in health.charts %}
+              <article
+                class="health-chart-card"
+                data-role="health-chart-card"
+                data-health-label="{{ chart.label }}"
+                data-health-unit="{{ chart.unit }}"
+                data-health-points='{{ chart.points|tojson }}'
+              >
+                <div class="card-head">
+                  <div>
+                    <strong>{{ chart.label }}</strong>
+                    <p class="muted">{{ chart.point_count }} saved point{{ '' if chart.point_count == 1 else 's' }}</p>
+                  </div>
+                  <div class="health-chart-latest">{{ chart.latest_value_text }}</div>
+                </div>
+                <div class="health-chart-stage">
+                  <svg
+                    class="health-chart-svg"
+                    data-role="health-chart-svg"
+                    viewBox="0 0 320 160"
+                    preserveAspectRatio="none"
+                    role="img"
+                    aria-label="{{ chart.label }} trend over time"
+                  ></svg>
+                  <div class="health-chart-tooltip" data-role="health-chart-tooltip" hidden></div>
+                </div>
+                <small class="muted" data-role="health-chart-caption">
+                  {% if chart.point_count %}
+                    Latest {{ chart.latest_value_text }}
+                  {% else %}
+                    No saved data yet. Add a check-in to start this graph.
+                  {% endif %}
+                </small>
+              </article>
+            {% endfor %}
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section
+      class="tab-panel{{ ' active' if state.default_tab == 'coach' else '' }}"
+      id="panel-coach"
+      data-tab-panel="coach"
+      role="tabpanel"
+      aria-labelledby="tab-coach"
+      {% if state.default_tab != 'coach' %}hidden{% endif %}
+    >
+      {% set assistant = state.assistant %}
+      <div class="content-shell coach-shell">
+        <article class="content-card content-card-wide">
+          <div class="content-kicker">Superagent</div>
+          <div class="card-head">
+            <div>
+              <h2>{{ assistant.agent_name }}</h2>
+              <p class="muted">This coach can read your Health, Diet, and Gym data, chat with you about it, and propose safe updates that still require your confirmation. When scope matters, it should ask whether you mean today only or your regular plan.</p>
+            </div>
+            <div class="status-pill {{ assistant.status_class }}" data-role="coach-status">{{ assistant.status_label }}</div>
+          </div>
+          <div class="summary-grid compact">
+            <div class="summary-tile">
+              <span>Can Read</span>
+              <strong>Health, Diet, Gym</strong>
+            </div>
+            <div class="summary-tile">
+              <span>Can Propose</span>
+              <strong>Measurements, Diet Focus, Gym Edits, Targets</strong>
+            </div>
+            <div class="summary-tile">
+              <span>Cannot Touch</span>
+              <strong>Project Code</strong>
+            </div>
+            <div class="summary-tile">
+              <span>Needs Approval</span>
+              <strong>Every change</strong>
+            </div>
+          </div>
+          <p class="muted" data-role="coach-summary">{{ assistant.offline_text if not assistant.available else assistant.empty_text }}</p>
+        </article>
+
+        <article class="content-card content-card-wide coach-chat-card">
+          <div class="content-kicker">Chat</div>
+          <h2>Talk to the coach</h2>
+          <div class="coach-examples">
+            <span>Examples</span>
+            <div class="coach-example-list">
+              <small>My weight today is 96.4 kg.</small>
+              <small>Give me protein rich meals for today.</small>
+              <small>Add boiled egg to breakfast today.</small>
+              <small>Redesign breakfast today to include 2 boiled eggs and 3 egg whites.</small>
+              <small>Replace lat pulldown with chest-supported row long term.</small>
+              <small>Make today's workout 45 minutes.</small>
+              <small>Set my target weight to 88 kg.</small>
+            </div>
+          </div>
+          <section class="flash-stack compact coach-feedback" data-role="coach-feedback" hidden></section>
+          <div data-role="coach-thread-host">
+            {% if assistant.messages %}
+              <div class="coach-thread">
+                {% for message in assistant.messages %}
+                  <article class="coach-message coach-message-{{ message.role }}">
+                    <div class="coach-message-head">
+                      <strong>{{ 'You' if message.role == 'user' else assistant.agent_name }}</strong>
+                      <small>{{ message.created_at_text }}</small>
+                    </div>
+                    <div class="coach-message-body">{{ message.content_text }}</div>
+                    {% if message.attachments %}
+                      <div class="coach-attachment-list">
+                        {% for attachment in message.attachments %}
+                          <a href="{{ attachment.download_url }}" class="coach-attachment-chip" target="_blank" rel="noreferrer">
+                            {% if attachment.is_image %}
+                              <span class="coach-attachment-thumb-wrap">
+                                <img src="{{ attachment.thumbnail_url }}" alt="{{ attachment.original_name }}" class="coach-attachment-thumb" loading="lazy">
+                              </span>
+                            {% endif %}
+                            <span class="coach-attachment-kind">{{ attachment.kind_label }}</span>
+                            <strong>{{ attachment.original_name }}</strong>
+                            <small>{{ attachment.size_text }}</small>
+                            {% if attachment.preview_text %}
+                              <em>{{ attachment.preview_text }}</em>
+                            {% endif %}
+                          </a>
+                        {% endfor %}
+                      </div>
+                    {% endif %}
+                    {% if message.actions %}
+                      <div class="coach-action-list">
+                        {% for action in message.actions %}
+                          <article class="coach-action-card coach-action-{{ action.status }}">
+                            <div class="coach-action-head">
+                              <strong>{{ action.label }}</strong>
+                              <span class="diet-status-pill diet-status-{{ 'done' if action.status == 'applied' else 'skipped' if action.status == 'cancelled' else 'pending' }}">{{ action.status|replace('_', ' ')|title }}</span>
+                            </div>
+                            <p class="muted">{{ action.summary }}</p>
+                            {% if action.resolution_note %}
+                              <small class="muted">{{ action.resolution_note }}</small>
+                            {% endif %}
+                            {% if action.status == 'pending' %}
+                              <form method="post" action="{{ url_for('assistant_action') }}" class="coach-action-form">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <input type="hidden" name="action_id" value="{{ action.id }}">
+                                <button type="submit" name="decision" value="confirm" class="primary">Confirm</button>
+                                <button type="submit" name="decision" value="cancel" class="ghost">Cancel</button>
+                              </form>
+                            {% endif %}
+                          </article>
+                        {% endfor %}
+                      </div>
+                    {% endif %}
+                  </article>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="muted">{{ assistant.offline_text if not assistant.available else assistant.empty_text }}</p>
+            {% endif %}
+          </div>
+
+          <form method="post" action="{{ url_for('assistant_chat') }}" class="dashboard-form coach-chat-form" data-role="coach-chat-form" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <label class="form-span-2 coach-chat-input">
+              <span>Message</span>
+              <textarea name="message" rows="4" maxlength="1200" placeholder="Example: Give me protein rich meals for today, replace lat pulldown with chest-supported row long term, or set my target weight to 88 kg." data-role="coach-textarea"></textarea>
+            </label>
+            <label class="form-span-2 coach-file-field">
+              <span>Attachments</span>
+              <input
+                type="file"
+                name="attachments"
+                multiple
+                accept="{{ assistant.attachment_policy.accept_text }}"
+                data-role="coach-file-input"
+              >
+              <small class="muted">Up to {{ assistant.attachment_policy.max_files }} files, {{ assistant.attachment_policy.max_file_size_text }} each, {{ assistant.attachment_policy.max_total_size_text }} total per user. Files auto-delete after {{ assistant.attachment_policy.retention_days }} days.</small>
+              <small class="muted">{{ assistant.attachment_policy.image_hint }}</small>
+              <div class="coach-selected-files" data-role="coach-selected-files" hidden></div>
+            </label>
+            <div class="form-actions">
+              <button type="submit" class="primary" data-role="coach-submit" {{ 'disabled' if not assistant.available else '' }}>Send to Coach</button>
+            </div>
+          </form>
+        </article>
+      </div>
+    </section>
+
+    {% if state.can_view_servers %}
+      <section
+        class="tab-panel{{ ' active' if state.default_tab == 'servers' else '' }}"
+        id="panel-servers"
+        data-tab-panel="servers"
+        role="tabpanel"
+        aria-labelledby="tab-servers"
+        {% if state.default_tab != 'servers' %}hidden{% endif %}
+      >
+        <div class="board">
+    {% for server in state.servers %}
+      {% set snapshot = server.snapshot %}
+      <section class="server-card {{ server.accent }}" data-server-id="{{ server.id }}">
+        <div class="server-head">
+          <div>
+            <div class="server-kicker">{{ server.name }}</div>
+            <h2>{{ server.label }}</h2>
+            <p class="muted" data-role="server-host">{{ server.host }}{% if snapshot.hostname %} | {{ snapshot.hostname }}{% endif %}</p>
+          </div>
+          <div class="status-pill {{ 'online' if snapshot.reachable else 'offline' }}" data-role="server-status">
+            {{ 'Online' if snapshot.reachable else 'Offline' }}
+          </div>
+        </div>
+
+        {% if snapshot.reachable %}
+          <div class="metric-grid" data-role="metric-grid">
+            {% for metric in server.metrics %}
+            <article class="metric-tile {{ metric.css_class }}" data-metric-key="{{ metric.key }}">
+              <span>{{ metric.label }}</span>
+              <strong data-role="metric-value">{{ metric.value_text }}</strong>
+              <div class="sparkline-wrap">
+                <div class="sparkline-head">
+                  <small>{{ metric.chart.window_label }}</small>
+                  <small data-role="metric-samples">{{ metric.chart.sample_count }} samples</small>
+                </div>
+                <svg
+                  class="sparkline"
+                  viewBox="0 0 {{ metric.chart.width }} {{ metric.chart.height }}"
+                  preserveAspectRatio="none"
+                  role="img"
+                  aria-label="{{ metric.label }} trend over the last 10 minutes"
+                >
+                  <rect class="sparkline-frame" x="0.5" y="0.5" width="{{ metric.chart.width - 1 }}" height="{{ metric.chart.height - 1 }}" rx="10"></rect>
+                  <path class="sparkline-guide" d="M 0 {{ metric.chart.mid_y }} L {{ metric.chart.width }} {{ metric.chart.mid_y }}"></path>
+                  {% for path in metric.chart.area_paths %}
+                    <path class="sparkline-area" d="{{ path }}"></path>
+                  {% endfor %}
+                  {% for path in metric.chart.line_paths %}
+                    <path class="sparkline-line" d="{{ path }}"></path>
+                  {% endfor %}
+                  {% if metric.chart.has_data %}
+                    <circle class="sparkline-dot" cx="{{ metric.chart.last_x }}" cy="{{ metric.chart.last_y }}" r="2.8"></circle>
+                  {% endif %}
+                </svg>
+              </div>
+              <small data-role="metric-detail">{{ metric.detail_text }}</small>
+            </article>
+            {% endfor %}
+          </div>
+
+          {% if server.price_box or server.host_actions %}
+            <div class="server-tools{{ ' single-action-center' if server.id == '106' else ' price-above-actions' if server.id == '118' else '' }}">
+              {% if server.id == "118" %}
+                <div class="price-box-slot" data-role="price-box-slot">
+                  {% if server.price_box %}
+                    <article class="price-box {{ server.price_box.status }}">
+                      <div class="price-box-head">
+                        <div>
+                          <span class="price-box-kicker">{{ server.price_box.title }}</span>
+                          <p class="price-box-subtitle">{{ server.price_box.subtitle }}</p>
+                        </div>
+                        <a href="{{ server.price_box.source_url }}" class="price-box-link" target="_blank" rel="noreferrer">{{ server.price_box.source_label }}</a>
+                      </div>
+                      <div class="price-box-grid">
+                        <div class="price-box-stat">
+                          <span>{{ server.price_box.current_label }}</span>
+                          <strong>{{ server.price_box.current_value_text }}</strong>
+                        </div>
+                        <div class="price-box-stat">
+                          <span>{{ server.price_box.average_label }}</span>
+                          <strong>{{ server.price_box.average_value_text }}</strong>
+                        </div>
+                        <form method="post" action="{{ url_for('action') }}" class="price-box-stat threshold-inline-form">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                          <input type="hidden" name="scope" value="setting">
+                          <input type="hidden" name="server_id" value="{{ server.id }}">
+                          <input type="hidden" name="setting_id" value="msi_auto_poweroff_threshold">
+                          <label class="threshold-inline-label">
+                            <span>{{ server.price_box.threshold_label }}</span>
+                            <input type="number" name="value" min="0.001" max="100" step="0.001" value="{{ '%.3f'|format(server.price_box.threshold_value or 0) }}" inputmode="decimal">
+                          </label>
+                          <button type="submit" class="ghost">Save</button>
+                        </form>
+                      </div>
+                      <div class="price-box-meta">
+                        <small>{{ server.price_box.period_text }}</small>
+                        <small>{{ server.price_box.meta_text }}</small>
+                      </div>
+                      {% if server.price_box.status_note %}
+                        <p class="muted tiny">{{ server.price_box.status_note }}</p>
+                      {% endif %}
+                    </article>
+                  {% endif %}
+                </div>
+              {% endif %}
+              {% if server.host_actions %}
+                <div class="host-action-stack{{ ' centered' if server.id == '106' else '' }}">
+                  <div class="host-actions">
+                    {% for host_action in server.host_actions %}
+                      {% if not host_action.show_when_offline %}
+                      <form method="post" action="{{ url_for('action') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" name="scope" value="host">
+                        <input type="hidden" name="server_id" value="{{ server.id }}">
+                        <input type="hidden" name="action" value="{{ host_action.id }}">
+                        <button type="submit" class="{{ host_action.button_class }}">{{ host_action.label }}</button>
+                      </form>
+                      {% endif %}
+                    {% endfor %}
+                  </div>
+                  {% if server.host_note and server.id != "118" %}
+                    <p class="muted tiny{{ ' centered-note' if server.id == '106' else '' }}">{{ server.host_note }}</p>
+                  {% endif %}
+                </div>
+              {% endif %}
+            </div>
+          {% endif %}
+
+          {% if snapshot.container_error %}
+            <p class="error-text">Docker query warning: {{ snapshot.container_error }}</p>
+          {% endif %}
+
+          <div class="service-grid">
+            {% for service in server.services %}
+              <article class="service-card">
+                <div class="service-top">
+                  <div class="service-title">
+                    <span class="service-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" focusable="false">
+                        <use href="#icon-{{ service.icon or 'layout' }}"></use>
+                      </svg>
+                    </span>
+                    <div>
+                    <h3>{{ service.name }}</h3>
+                    <p class="muted">{{ service.description }}</p>
+                    </div>
+                  </div>
+                  <div class="status-pill {{ service.state }}">{{ service.state|replace('_', ' ')|title }}</div>
+                </div>
+
+                <p class="service-summary">{{ service.state_text }}</p>
+
+                {% if service.details %}
+                  <div class="service-details">
+                    {% for item in service.details %}
+                      <div class="service-detail">
+                        <span>{{ item.label }}</span>
+                        <div class="service-detail-value">
+                          <code>{{ item.value }}</code>
+                          <button
+                            type="button"
+                            class="copy-button"
+                            data-copy-value="{{ item.value }}"
+                            data-copy-label="{{ item.label }}"
+                            aria-label="Copy {{ item.label }}"
+                            title="Copy {{ item.label }}"
+                          >
+                            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                              <use href="#icon-copy"></use>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+
+                {% if service.url %}
+                  <a href="{{ service.url }}" class="service-link" target="_blank" rel="noreferrer">Open Service</a>
+                {% endif %}
+
+                <div class="container-list">
+                  {% for item in service.containers %}
+                    {% set match = (service.containers_found | selectattr('name', 'equalto', item) | list | first) %}
+                    <div class="container-chip {{ match and ('running' if match.status_text.lower().startswith('up') else 'stopped') or 'missing' }}">
+                      <span>{{ item }}</span>
+                      <small>{{ match.status_text if match else 'not detected' }}</small>
+                    </div>
+                  {% endfor %}
+                </div>
+
+                {% if service.actions %}
+                  <div class="action-row">
+                    {% for action_name in service.actions %}
+                      <form method="post" action="{{ url_for('action') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" name="scope" value="service">
+                        <input type="hidden" name="server_id" value="{{ server.id }}">
+                        <input type="hidden" name="service_id" value="{{ service.id }}">
+                        <input type="hidden" name="action" value="{{ action_name }}">
+                        <button type="submit" class="{{ 'warn' if action_name == 'restart' else 'ghost' }}">{{ action_name|title }}</button>
+                      </form>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <p class="muted tiny">Read-only service to avoid accidental downtime.</p>
+                {% endif %}
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="offline-panel">
+            {% if server.id == "118" and server.price_box %}
+              <div class="price-box-slot" data-role="price-box-slot">
+                <article class="price-box {{ server.price_box.status }}">
+                  <div class="price-box-head">
+                    <div>
+                      <span class="price-box-kicker">{{ server.price_box.title }}</span>
+                      <p class="price-box-subtitle">{{ server.price_box.subtitle }}</p>
+                    </div>
+                    <a href="{{ server.price_box.source_url }}" class="price-box-link" target="_blank" rel="noreferrer">{{ server.price_box.source_label }}</a>
+                  </div>
+                  <div class="price-box-grid">
+                    <div class="price-box-stat">
+                      <span>{{ server.price_box.current_label }}</span>
+                      <strong>{{ server.price_box.current_value_text }}</strong>
+                    </div>
+                    <div class="price-box-stat">
+                      <span>{{ server.price_box.average_label }}</span>
+                      <strong>{{ server.price_box.average_value_text }}</strong>
+                    </div>
+                    <form method="post" action="{{ url_for('action') }}" class="price-box-stat threshold-inline-form">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                      <input type="hidden" name="scope" value="setting">
+                      <input type="hidden" name="server_id" value="{{ server.id }}">
+                      <input type="hidden" name="setting_id" value="msi_auto_poweroff_threshold">
+                      <label class="threshold-inline-label">
+                        <span>{{ server.price_box.threshold_label }}</span>
+                        <input type="number" name="value" min="0.001" max="100" step="0.001" value="{{ '%.3f'|format(server.price_box.threshold_value or 0) }}" inputmode="decimal">
+                      </label>
+                      <button type="submit" class="ghost">Save</button>
+                    </form>
+                  </div>
+                  <div class="price-box-meta">
+                    <small>{{ server.price_box.period_text }}</small>
+                    <small>{{ server.price_box.meta_text }}</small>
+                  </div>
+                  {% if server.price_box.status_note %}
+                    <p class="muted tiny">{{ server.price_box.status_note }}</p>
+                  {% endif %}
+                </article>
+              </div>
+            {% endif %}
+            <p>Server data is currently unavailable.</p>
+            <p class="muted">{{ snapshot.error or 'SSH connection failed.' }}</p>
+            {% if server.host_actions %}
+              {% for host_action in server.host_actions %}
+                {% if host_action.show_when_offline %}
+                  <form method="post" action="{{ url_for('action') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="scope" value="host">
+                    <input type="hidden" name="server_id" value="{{ server.id }}">
+                    <input type="hidden" name="action" value="{{ host_action.id }}">
+                    <button type="submit" class="primary">{{ host_action.label }}</button>
+                  </form>
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+          </div>
+        {% endif %}
+      </section>
+    {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+  </main>
+
+  <div class="exercise-modal" data-role="exercise-modal" hidden>
+    <div class="exercise-modal-backdrop" data-role="exercise-modal-close"></div>
+    <article class="exercise-modal-card" role="dialog" aria-modal="true" aria-labelledby="exercise-modal-title">
+      <div class="card-head">
+        <div>
+          <div class="content-kicker">Exercise Reminder</div>
+          <h2 id="exercise-modal-title" data-role="exercise-modal-title">Exercise</h2>
+        </div>
+        <button type="button" class="ghost" data-role="exercise-modal-close">Close</button>
+      </div>
+      <div class="exercise-modal-gallery" data-role="exercise-modal-gallery"></div>
+      <p class="muted" data-role="exercise-modal-empty" hidden>No web image was found for this exercise yet.</p>
+      <div class="exercise-modal-instructions" data-role="exercise-modal-instructions" hidden>
+        <h3>Instructions</h3>
+        <ol data-role="exercise-modal-instruction-list"></ol>
+      </div>
+      <p class="muted tiny" data-role="exercise-modal-source"></p>
+    </article>
+  </div>
+
+  <script>
+    const apiUrl = "{{ url_for('api_state') }}";
+    const pollMs = {{ state.client_poll_seconds * 1000 }};
+    const csrfToken = "{{ csrf_token }}";
+    const defaultTabId = "{{ state.default_tab }}";
+    const tabStorageKey = "controldeck-active-tab-" + {{ state.viewer_username|tojson }};
+    const iranTimeZone = "Asia/Tehran";
+    const clockFormatters = {
+      gregorianTime: new Intl.DateTimeFormat("en-GB-u-ca-gregory", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      }),
+      gregorianDate: new Intl.DateTimeFormat("en-GB-u-ca-gregory", {
+        weekday: "short",
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      }),
+      jalaliTime: new Intl.DateTimeFormat("en-US-u-ca-persian", {
+        timeZone: iranTimeZone,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      }),
+      jalaliDate: new Intl.DateTimeFormat("en-US-u-ca-persian", {
+        timeZone: iranTimeZone,
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      }),
+    };
+
+    function scrollCoachThreadToBottom() {
+      const coachPanel = document.querySelector('[data-tab-panel="coach"].active') || document.querySelector('[data-tab-panel="coach"]');
+      const thread = coachPanel ? coachPanel.querySelector('.coach-thread') : null;
+      if (!thread) {
+        return;
+      }
+      const applyScroll = () => {
+        thread.scrollTop = thread.scrollHeight;
+      };
+      applyScroll();
+      window.requestAnimationFrame(() => {
+        applyScroll();
+        window.requestAnimationFrame(applyScroll);
+      });
+    }
+
+    function activateTab(tabId) {
+      const tabs = Array.from(document.querySelectorAll("[data-tab-target]"));
+      const panels = Array.from(document.querySelectorAll("[data-tab-panel]"));
+      const hasMatch = tabs.some((tab) => tab.dataset.tabTarget === tabId);
+      const nextTabId = hasMatch ? tabId : defaultTabId;
+
+      tabs.forEach((tab) => {
+        const active = tab.dataset.tabTarget === nextTabId;
+        tab.classList.toggle("active", active);
+        tab.setAttribute("aria-selected", active ? "true" : "false");
+      });
+
+      panels.forEach((panel) => {
+        const active = panel.dataset.tabPanel === nextTabId;
+        panel.classList.toggle("active", active);
+        panel.hidden = !active;
+      });
+
+      try {
+        window.localStorage.setItem(tabStorageKey, nextTabId);
+      } catch (error) {
+        console.debug("Tab storage unavailable", error);
+      }
+
+      if (nextTabId === "coach") {
+        scrollCoachThreadToBottom();
+      }
+    }
+
+    function initializeTabs() {
+      const tabs = Array.from(document.querySelectorAll("[data-tab-target]"));
+      if (!tabs.length) {
+        return;
+      }
+
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => activateTab(tab.dataset.tabTarget));
+      });
+
+      let initialTabId = defaultTabId;
+      const urlParams = new URLSearchParams(window.location.search);
+      try {
+        initialTabId = urlParams.get("tab") || defaultTabId;
+      } catch (error) {
+        console.debug("Tab storage unavailable", error);
+        initialTabId = urlParams.get("tab") || defaultTabId;
+      }
+      activateTab(initialTabId);
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function renderSparkline(metric) {
+      const chart = metric.chart || {};
+      const areaPaths = (chart.area_paths || [])
+        .map((path) => `<path class="sparkline-area" d="${escapeHtml(path)}"></path>`)
+        .join("");
+      const linePaths = (chart.line_paths || [])
+        .map((path) => `<path class="sparkline-line" d="${escapeHtml(path)}"></path>`)
+        .join("");
+      const dot = chart.has_data
+        ? `<circle class="sparkline-dot" cx="${chart.last_x}" cy="${chart.last_y}" r="2.8"></circle>`
+        : "";
+
+      return `
+        <div class="sparkline-wrap">
+          <div class="sparkline-head">
+            <small>${escapeHtml(chart.window_label || "Last 10 min")}</small>
+            <small data-role="metric-samples">${escapeHtml(chart.sample_count ?? 0)} samples</small>
+          </div>
+          <svg
+            class="sparkline"
+            viewBox="0 0 ${chart.width || 164} ${chart.height || 50}"
+            preserveAspectRatio="none"
+            role="img"
+            aria-label="${escapeHtml(metric.label)} trend over the last 10 minutes"
+          >
+            <rect class="sparkline-frame" x="0.5" y="0.5" width="${(chart.width || 164) - 1}" height="${(chart.height || 50) - 1}" rx="10"></rect>
+            <path class="sparkline-guide" d="M 0 ${chart.mid_y || 25} L ${chart.width || 164} ${chart.mid_y || 25}"></path>
+            ${areaPaths}
+            ${linePaths}
+            ${dot}
+          </svg>
+        </div>
+      `;
+    }
+
+    function renderMetricCard(metric) {
+      return `
+        <article class="metric-tile ${escapeHtml(metric.css_class)}" data-metric-key="${escapeHtml(metric.key)}">
+          <span>${escapeHtml(metric.label)}</span>
+          <strong data-role="metric-value">${escapeHtml(metric.value_text)}</strong>
+          ${renderSparkline(metric)}
+          <small data-role="metric-detail">${escapeHtml(metric.detail_text)}</small>
+        </article>
+      `;
+    }
+
+    function updateCalendarClock() {
+      const now = new Date();
+      const targets = {
+        gregorianTime: document.querySelector('[data-role="gregorian-time"]'),
+        gregorianDate: document.querySelector('[data-role="gregorian-date"]'),
+        jalaliTime: document.querySelector('[data-role="jalali-time"]'),
+        jalaliDate: document.querySelector('[data-role="jalali-date"]'),
+      };
+
+      if (targets.gregorianTime) {
+        targets.gregorianTime.textContent = clockFormatters.gregorianTime.format(now);
+      }
+      if (targets.gregorianDate) {
+        targets.gregorianDate.textContent = clockFormatters.gregorianDate.format(now);
+      }
+      if (targets.jalaliTime) {
+        targets.jalaliTime.textContent = clockFormatters.jalaliTime.format(now);
+      }
+      if (targets.jalaliDate) {
+        targets.jalaliDate.textContent = clockFormatters.jalaliDate.format(now);
+      }
+    }
+
+    function wireCopyButtons(scope = document) {
+      scope.querySelectorAll('.copy-button').forEach((button) => {
+        if (button.dataset.copyBound === '1') {
+          return;
+        }
+        button.dataset.copyBound = '1';
+        button.addEventListener('click', async () => {
+          const value = button.dataset.copyValue || '';
+          const label = button.dataset.copyLabel || 'Value';
+          try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              await navigator.clipboard.writeText(value);
+            } else {
+              const helper = document.createElement('textarea');
+              helper.value = value;
+              helper.setAttribute('readonly', 'readonly');
+              helper.style.position = 'absolute';
+              helper.style.left = '-9999px';
+              document.body.appendChild(helper);
+              helper.select();
+              document.execCommand('copy');
+              document.body.removeChild(helper);
+            }
+            const previous = button.dataset.copyText || '';
+            if (!button.dataset.copyText) {
+              button.dataset.copyText = button.innerHTML;
+            }
+            button.classList.add('copied');
+            button.innerHTML = '<span>Copied</span>';
+            window.setTimeout(() => {
+              button.classList.remove('copied');
+              button.innerHTML = previous;
+            }, 1400);
+          } catch (error) {
+            console.debug(`Copy failed for ${label}`, error);
+          }
+        });
+      });
+    }
+
+    function closeExerciseModal() {
+      const modal = document.querySelector('[data-role="exercise-modal"]');
+      if (modal) {
+        modal.hidden = true;
+      }
+    }
+
+    function openExerciseModal(payload) {
+      const modal = document.querySelector('[data-role="exercise-modal"]');
+      if (!modal) {
+        return;
+      }
+      const title = modal.querySelector('[data-role="exercise-modal-title"]');
+      const gallery = modal.querySelector('[data-role="exercise-modal-gallery"]');
+      const empty = modal.querySelector('[data-role="exercise-modal-empty"]');
+      const instructionsWrap = modal.querySelector('[data-role="exercise-modal-instructions"]');
+      const instructionList = modal.querySelector('[data-role="exercise-modal-instruction-list"]');
+      const source = modal.querySelector('[data-role="exercise-modal-source"]');
+      const urls = (payload.imageUrls || []).filter(Boolean);
+      const instructions = Array.isArray(payload.instructions) ? payload.instructions.filter(Boolean) : [];
+      title.textContent = payload.name || 'Exercise';
+      gallery.innerHTML = urls.map((url) => `<img src="${escapeHtml(url)}" alt="${escapeHtml(payload.name || 'Exercise image')}">`).join('');
+      empty.hidden = urls.length > 0;
+      if (instructionList) {
+        instructionList.innerHTML = instructions.map((step) => `<li>${escapeHtml(step)}</li>`).join('');
+      }
+      if (instructionsWrap) {
+        instructionsWrap.hidden = instructions.length === 0;
+      }
+      source.innerHTML = payload.sourceUrl
+        ? `Image source: <a href="${escapeHtml(payload.sourceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(payload.sourceName || 'exercise database')}</a>`
+        : (payload.sourceName ? `Image source: ${escapeHtml(payload.sourceName)}` : '');
+      modal.hidden = false;
+    }
+
+    function wireExerciseButtons(scope = document) {
+      scope.querySelectorAll('.exercise-name-button').forEach((button) => {
+        if (button.dataset.modalBound === '1') {
+          return;
+        }
+        button.dataset.modalBound = '1';
+        button.addEventListener('click', () => {
+          let instructions = [];
+          try {
+            instructions = JSON.parse(button.dataset.instructions || '[]');
+          } catch (error) {
+            console.debug('Instruction data parse failed', error);
+          }
+          openExerciseModal({
+            name: button.dataset.exerciseName || 'Exercise',
+            imageUrls: (button.dataset.imageUrls || '').split('||').filter(Boolean),
+            instructions,
+            sourceName: button.dataset.imageSourceName || '',
+            sourceUrl: button.dataset.imageSourceUrl || '',
+          });
+        });
+      });
+
+      scope.querySelectorAll('[data-role="exercise-modal-close"]').forEach((button) => {
+        if (button.dataset.modalBound === '1') {
+          return;
+        }
+        button.dataset.modalBound = '1';
+        button.addEventListener('click', closeExerciseModal);
+      });
+    }
+
+    function buildHealthChartGeometry(points, width = 320, height = 160, padding = 18) {
+      if (!points.length) {
+        return {
+          hasData: false,
+          linePath: '',
+          areaPath: '',
+          circles: [],
+          midY: Math.round(height / 2),
+          width,
+          height,
+        };
+      }
+
+      const values = points.map((point) => Number(point.value));
+      let minValue = Math.min(...values);
+      let maxValue = Math.max(...values);
+      if (minValue === maxValue) {
+        minValue -= 1;
+        maxValue += 1;
+      }
+
+      const plotWidth = width - (padding * 2);
+      const plotHeight = height - (padding * 2);
+      const xStep = points.length > 1 ? (plotWidth / (points.length - 1)) : 0;
+      const circles = points.map((point, index) => {
+        const x = padding + (xStep * index);
+        const ratio = (Number(point.value) - minValue) / (maxValue - minValue || 1);
+        const y = height - padding - (ratio * plotHeight);
+        return {
+          ...point,
+          x: Number(x.toFixed(2)),
+          y: Number(y.toFixed(2)),
+        };
+      });
+
+      const linePath = circles.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
+      const areaPath = circles.length
+        ? `${linePath} L ${circles[circles.length - 1].x} ${height - padding} L ${circles[0].x} ${height - padding} Z`
+        : '';
+
+      return {
+        hasData: true,
+        linePath,
+        areaPath,
+        circles,
+        midY: Number((height / 2).toFixed(2)),
+        width,
+        height,
+      };
+    }
+
+    function renderHealthCharts(scope = document) {
+      scope.querySelectorAll('[data-role="health-chart-card"]').forEach((card) => {
+        const svg = card.querySelector('[data-role="health-chart-svg"]');
+        const caption = card.querySelector('[data-role="health-chart-caption"]');
+        const tooltip = card.querySelector('[data-role="health-chart-tooltip"]');
+        if (!svg || !caption || !tooltip) {
+          return;
+        }
+
+        let points = [];
+        try {
+          points = JSON.parse(card.dataset.healthPoints || '[]');
+        } catch (error) {
+          console.debug('Health chart data parse failed', error);
+        }
+
+        const label = card.dataset.healthLabel || 'Measurement';
+        const unit = card.dataset.healthUnit || '';
+        const geometry = buildHealthChartGeometry(points);
+        if (!geometry.hasData) {
+          svg.innerHTML = `
+            <rect class="health-chart-frame" x="0.5" y="0.5" width="${geometry.width - 1}" height="${geometry.height - 1}" rx="16"></rect>
+            <path class="health-chart-guide" d="M 0 ${geometry.midY} L ${geometry.width} ${geometry.midY}"></path>
+            <text class="health-chart-empty" x="${geometry.width / 2}" y="${geometry.height / 2}" text-anchor="middle">No data yet</text>
+          `;
+          tooltip.hidden = true;
+          return;
+        }
+
+        const defaultPoint = geometry.circles[geometry.circles.length - 1];
+        const defaultCaption = `Latest ${defaultPoint.value.toFixed(1)} ${unit} on ${defaultPoint.date}`;
+        caption.textContent = defaultCaption;
+        svg.innerHTML = `
+          <rect class="health-chart-frame" x="0.5" y="0.5" width="${geometry.width - 1}" height="${geometry.height - 1}" rx="16"></rect>
+          <path class="health-chart-guide" d="M 0 ${geometry.midY} L ${geometry.width} ${geometry.midY}"></path>
+          <path class="health-chart-area" d="${geometry.areaPath}"></path>
+          <path class="health-chart-line" d="${geometry.linePath}"></path>
+          ${geometry.circles.map((point) => `
+            <circle
+              class="health-chart-dot"
+              cx="${point.x}"
+              cy="${point.y}"
+              r="4.6"
+              tabindex="0"
+              data-point-label="${escapeHtml(label)}"
+              data-point-value="${escapeHtml(point.value.toFixed(1))}"
+              data-point-unit="${escapeHtml(unit)}"
+              data-point-date="${escapeHtml(point.date)}"
+            ></circle>
+          `).join('')}
+        `;
+
+        const hideTooltip = () => {
+          tooltip.hidden = true;
+          caption.textContent = defaultCaption;
+        };
+        const showTooltip = (dot) => {
+          const value = dot.dataset.pointValue || '';
+          const date = dot.dataset.pointDate || '';
+          const metricLabel = dot.dataset.pointLabel || label;
+          const metricUnit = dot.dataset.pointUnit || unit;
+          caption.textContent = `${metricLabel}: ${value} ${metricUnit} on ${date}`;
+          tooltip.textContent = `${value} ${metricUnit} • ${date}`;
+          tooltip.hidden = false;
+          tooltip.style.left = `${dot.getAttribute('cx')}px`;
+          tooltip.style.top = `${Math.max(12, Number(dot.getAttribute('cy')) - 14)}px`;
+        };
+
+        svg.querySelectorAll('.health-chart-dot').forEach((dot) => {
+          dot.addEventListener('mouseenter', () => showTooltip(dot));
+          dot.addEventListener('focus', () => showTooltip(dot));
+          dot.addEventListener('mouseleave', hideTooltip);
+          dot.addEventListener('blur', hideTooltip);
+          dot.addEventListener('click', () => showTooltip(dot));
+        });
+      });
+    }
+
+    function filterDietHistoryPoints(points, range) {
+      const normalized = Array.isArray(points) ? points.filter((item) => item && item.date) : [];
+      if (!normalized.length || range === 'all') {
+        return normalized;
+      }
+      const rangeDays = { week: 7, month: 31, year: 366 }[range];
+      if (!rangeDays) {
+        return normalized;
+      }
+      const today = new Date();
+      const cutoff = new Date(today);
+      cutoff.setDate(cutoff.getDate() - rangeDays + 1);
+      return normalized.filter((item) => {
+        const pointDate = new Date(`${item.date}T00:00:00`);
+        return !Number.isNaN(pointDate.getTime()) && pointDate >= cutoff;
+      });
+    }
+
+    function renderDietHistoryCards(scope = document) {
+      scope.querySelectorAll('[data-role="diet-history-card"]').forEach((card) => {
+        const svg = card.querySelector('[data-role="diet-history-svg"]');
+        const caption = card.querySelector('[data-role="diet-history-caption"]');
+        const tooltip = card.querySelector('[data-role="diet-history-tooltip"]');
+        const latest = card.querySelector('[data-role="diet-history-latest"]');
+        const average = card.querySelector('[data-role="diet-history-average"]');
+        const target = card.querySelector('[data-role="diet-history-target"]');
+        const count = card.querySelector('[data-role="diet-history-count"]');
+        const buttons = Array.from(card.querySelectorAll('[data-role="diet-history-range"]'));
+        if (!svg || !caption || !tooltip || !latest || !average || !target || !count || !buttons.length) {
+          return;
+        }
+
+        let points = [];
+        try {
+          points = JSON.parse(card.dataset.historyPoints || '[]');
+        } catch (error) {
+          console.debug('Diet history data parse failed', error);
+        }
+        const unit = card.dataset.historyUnit || 'kcal';
+        let activeRange = card.dataset.historyDefaultRange || 'month';
+
+        const renderRange = (range) => {
+          activeRange = range;
+          buttons.forEach((button) => button.classList.toggle('is-active', button.dataset.range === range));
+          const filtered = filterDietHistoryPoints(points, range);
+          const geometry = buildHealthChartGeometry(
+            filtered.map((item) => ({ date: item.date, value: item.value })),
+            320,
+            160,
+            14,
+          );
+          if (!filtered.length || !geometry.hasData) {
+            average.textContent = 'No data yet';
+            target.textContent = 'No data yet';
+            count.textContent = '0 days';
+            latest.textContent = 'No data yet';
+            caption.textContent = 'No saved days in this range yet.';
+            svg.innerHTML = `
+              <rect class="health-chart-frame" x="0.5" y="0.5" width="${geometry.width - 1}" height="${geometry.height - 1}" rx="16"></rect>
+              <path class="health-chart-guide" d="M 0 ${geometry.midY} L ${geometry.width} ${geometry.midY}"></path>
+              <text class="health-chart-empty" x="${geometry.width / 2}" y="${geometry.height / 2}" text-anchor="middle">No data yet</text>
+            `;
+            tooltip.hidden = true;
+            return;
+          }
+
+          const pointCount = filtered.length;
+          const averageIntake = filtered.reduce((sum, item) => sum + Number(item.value || 0), 0) / pointCount;
+          const averageTarget = filtered.reduce((sum, item) => sum + Number(item.target || 0), 0) / pointCount;
+          const defaultPoint = filtered[filtered.length - 1];
+          const defaultCaption = `${Number(defaultPoint.value || 0).toFixed(0)} ${unit} vs ${Number(defaultPoint.target || 0).toFixed(0)} ${unit} on ${defaultPoint.date}`;
+          average.textContent = `${averageIntake.toFixed(0)} ${unit}`;
+          target.textContent = `${averageTarget.toFixed(0)} ${unit}`;
+          count.textContent = `${pointCount} day${pointCount === 1 ? '' : 's'}`;
+          latest.textContent = `${Number(defaultPoint.value || 0).toFixed(0)} ${unit}`;
+          caption.textContent = defaultCaption;
+          svg.innerHTML = `
+            <rect class="health-chart-frame" x="0.5" y="0.5" width="${geometry.width - 1}" height="${geometry.height - 1}" rx="16"></rect>
+            <path class="health-chart-guide" d="M 0 ${geometry.midY} L ${geometry.width} ${geometry.midY}"></path>
+            <path class="health-chart-area" d="${geometry.areaPath}"></path>
+            <path class="health-chart-line" d="${geometry.linePath}"></path>
+            ${geometry.circles.map((point, index) => `
+              <circle
+                class="health-chart-dot"
+                cx="${point.x}"
+                cy="${point.y}"
+                r="4.6"
+                tabindex="0"
+                data-point-value="${escapeHtml(Number(filtered[index].value || 0).toFixed(0))}"
+                data-point-target="${escapeHtml(Number(filtered[index].target || 0).toFixed(0))}"
+                data-point-unit="${escapeHtml(unit)}"
+                data-point-date="${escapeHtml(filtered[index].date)}"
+              ></circle>
+            `).join('')}
+          `;
+
+          const hideTooltip = () => {
+            tooltip.hidden = true;
+            caption.textContent = defaultCaption;
+          };
+          const showTooltip = (dot) => {
+            const value = dot.dataset.pointValue || '';
+            const targetValue = dot.dataset.pointTarget || '';
+            const date = dot.dataset.pointDate || '';
+            const pointUnit = dot.dataset.pointUnit || unit;
+            caption.textContent = `${value} ${pointUnit} vs ${targetValue} ${pointUnit} on ${date}`;
+            tooltip.textContent = `${value} ${pointUnit} • target ${targetValue} ${pointUnit}`;
+            tooltip.hidden = false;
+            tooltip.style.left = `${dot.getAttribute('cx')}px`;
+            tooltip.style.top = `${Math.max(12, Number(dot.getAttribute('cy')) - 14)}px`;
+          };
+
+          svg.querySelectorAll('.health-chart-dot').forEach((dot) => {
+            dot.addEventListener('mouseenter', () => showTooltip(dot));
+            dot.addEventListener('focus', () => showTooltip(dot));
+            dot.addEventListener('mouseleave', hideTooltip);
+            dot.addEventListener('blur', hideTooltip);
+            dot.addEventListener('click', () => showTooltip(dot));
+          });
+        };
+
+        buttons.forEach((button) => {
+          if (button.dataset.dietHistoryBound === '1') {
+            return;
+          }
+          button.dataset.dietHistoryBound = '1';
+          button.addEventListener('click', () => renderRange(button.dataset.range || 'month'));
+        });
+
+        renderRange(activeRange);
+      });
+    }
+
+    function renderExerciseTrendCharts(scope = document) {
+      scope.querySelectorAll('[data-role="exercise-trend-card"]').forEach((card) => {
+        const svg = card.querySelector('[data-role="exercise-trend-svg"]');
+        const caption = card.querySelector('[data-role="exercise-trend-caption"]');
+        const tooltip = card.querySelector('[data-role="exercise-trend-tooltip"]');
+        if (!svg || !caption || !tooltip) {
+          return;
+        }
+
+        let points = [];
+        try {
+          points = JSON.parse(card.dataset.trendPoints || '[]');
+        } catch (error) {
+          console.debug('Exercise trend data parse failed', error);
+        }
+
+        const label = card.dataset.trendLabel || 'Exercise';
+        const unit = card.dataset.trendUnit || 'kg';
+        const geometry = buildHealthChartGeometry(points, 320, 92, 12);
+        if (!geometry.hasData) {
+          svg.innerHTML = `
+            <rect class="exercise-trend-frame" x="0.5" y="0.5" width="${geometry.width - 1}" height="${geometry.height - 1}" rx="14"></rect>
+            <path class="exercise-trend-guide" d="M 0 ${geometry.midY} L ${geometry.width} ${geometry.midY}"></path>
+            <text class="exercise-trend-empty" x="${geometry.width / 2}" y="${geometry.height / 2}" text-anchor="middle">No trend yet</text>
+          `;
+          tooltip.hidden = true;
+          return;
+        }
+
+        const defaultPoint = geometry.circles[geometry.circles.length - 1];
+        const defaultCaption = `Latest ${defaultPoint.value.toFixed(1)} ${unit} on ${defaultPoint.date}`;
+        caption.textContent = defaultCaption;
+        svg.innerHTML = `
+          <rect class="exercise-trend-frame" x="0.5" y="0.5" width="${geometry.width - 1}" height="${geometry.height - 1}" rx="14"></rect>
+          <path class="exercise-trend-guide" d="M 0 ${geometry.midY} L ${geometry.width} ${geometry.midY}"></path>
+          <path class="exercise-trend-area" d="${geometry.areaPath}"></path>
+          <path class="exercise-trend-line" d="${geometry.linePath}"></path>
+          ${geometry.circles.map((point) => `
+            <circle
+              class="exercise-trend-dot"
+              cx="${point.x}"
+              cy="${point.y}"
+              r="3.8"
+              tabindex="0"
+              data-point-label="${escapeHtml(label)}"
+              data-point-value="${escapeHtml(point.value.toFixed(1))}"
+              data-point-unit="${escapeHtml(unit)}"
+              data-point-date="${escapeHtml(point.date)}"
+            ></circle>
+          `).join('')}
+        `;
+
+        const hideTooltip = () => {
+          tooltip.hidden = true;
+          caption.textContent = defaultCaption;
+        };
+        const showTooltip = (dot) => {
+          const value = dot.dataset.pointValue || '';
+          const date = dot.dataset.pointDate || '';
+          const metricLabel = dot.dataset.pointLabel || label;
+          const metricUnit = dot.dataset.pointUnit || unit;
+          caption.textContent = `${metricLabel}: ${value} ${metricUnit} on ${date}`;
+          tooltip.textContent = `${value} ${metricUnit} • ${date}`;
+          tooltip.hidden = false;
+          tooltip.style.left = `${dot.getAttribute('cx')}px`;
+          tooltip.style.top = `${Math.max(10, Number(dot.getAttribute('cy')) - 10)}px`;
+        };
+
+        svg.querySelectorAll('.exercise-trend-dot').forEach((dot) => {
+          dot.addEventListener('mouseenter', () => showTooltip(dot));
+          dot.addEventListener('focus', () => showTooltip(dot));
+          dot.addEventListener('mouseleave', hideTooltip);
+          dot.addEventListener('blur', hideTooltip);
+          dot.addEventListener('click', () => showTooltip(dot));
+        });
+      });
+    }
+
+    function renderPriceBox(box) {
+      if (!box) {
+        return "";
+      }
+
+      const thresholdValue = Number.isFinite(Number(box.threshold_value))
+        ? Number(box.threshold_value).toFixed(3)
+        : "";
+      const note = box.status_note
+        ? `<p class="muted tiny">${escapeHtml(box.status_note)}</p>`
+        : "";
+
+      return `
+        <article class="price-box ${escapeHtml(box.status || "live")}">
+          <div class="price-box-head">
+            <div>
+              <span class="price-box-kicker">${escapeHtml(box.title || "Fortum Spot FI")}</span>
+              <p class="price-box-subtitle">${escapeHtml(box.subtitle || "")}</p>
+            </div>
+            <a href="${escapeHtml(box.source_url || "#")}" class="price-box-link" target="_blank" rel="noreferrer">${escapeHtml(box.source_label || "Fortum")}</a>
+          </div>
+          <div class="price-box-grid">
+            <div class="price-box-stat">
+              <span>${escapeHtml(box.current_label || "Current")}</span>
+              <strong>${escapeHtml(box.current_value_text || "n/a")}</strong>
+            </div>
+            <div class="price-box-stat">
+              <span>${escapeHtml(box.average_label || "Today Avg")}</span>
+              <strong>${escapeHtml(box.average_value_text || "n/a")}</strong>
+            </div>
+            <form method="post" action="{{ url_for('action') }}" class="price-box-stat threshold-inline-form">
+              <input type="hidden" name="csrf_token" value="${escapeHtml(csrfToken)}">
+              <input type="hidden" name="scope" value="setting">
+              <input type="hidden" name="server_id" value="118">
+              <input type="hidden" name="setting_id" value="msi_auto_poweroff_threshold">
+              <label class="threshold-inline-label">
+                <span>${escapeHtml(box.threshold_label || "Auto Off >")}</span>
+                <input type="number" name="value" min="0.001" max="100" step="0.001" value="${escapeHtml(thresholdValue)}" inputmode="decimal">
+              </label>
+              <button type="submit" class="ghost">Save</button>
+            </form>
+          </div>
+          <div class="price-box-meta">
+            <small>${escapeHtml(box.period_text || "")}</small>
+            <small>${escapeHtml(box.meta_text || "")}</small>
+          </div>
+          ${note}
+        </article>
+      `;
+    }
+
+    function coachActionPillClass(status) {
+      if (status === 'applied') {
+        return 'done';
+      }
+      if (status === 'cancelled') {
+        return 'skipped';
+      }
+      return 'pending';
+    }
+
+    function renderCoachAction(action) {
+      const resolutionNote = action.resolution_note
+        ? `<small class="muted">${escapeHtml(action.resolution_note)}</small>`
+        : '';
+      const actionForm = action.status === 'pending'
+        ? `
+          <form method="post" action="{{ url_for('assistant_action') }}" class="coach-action-form">
+            <input type="hidden" name="csrf_token" value="${escapeHtml(csrfToken)}">
+            <input type="hidden" name="action_id" value="${escapeHtml(action.id)}">
+            <button type="submit" name="decision" value="confirm" class="primary">Confirm</button>
+            <button type="submit" name="decision" value="cancel" class="ghost">Cancel</button>
+          </form>
+        `
+        : '';
+      return `
+        <article class="coach-action-card coach-action-${escapeHtml(action.status)}">
+          <div class="coach-action-head">
+            <strong>${escapeHtml(action.label)}</strong>
+            <span class="diet-status-pill diet-status-${escapeHtml(coachActionPillClass(action.status))}">${escapeHtml(String(action.status || 'pending').replace(/_/g, ' ').replace(/\b\w/g, (item) => item.toUpperCase()))}</span>
+          </div>
+          <p class="muted">${escapeHtml(action.summary || '')}</p>
+          ${resolutionNote}
+          ${actionForm}
+        </article>
+      `;
+    }
+
+    function renderCoachAttachment(attachment) {
+      const preview = attachment.preview_text
+        ? `<em>${escapeHtml(attachment.preview_text)}</em>`
+        : '';
+      const thumb = attachment.is_image && attachment.thumbnail_url
+        ? `<span class="coach-attachment-thumb-wrap"><img src="${escapeHtml(attachment.thumbnail_url)}" alt="${escapeHtml(attachment.original_name || 'Image attachment')}" class="coach-attachment-thumb" loading="lazy"></span>`
+        : '';
+      return `
+        <a href="${escapeHtml(attachment.download_url || '#')}" class="coach-attachment-chip" target="_blank" rel="noreferrer">
+          ${thumb}
+          <span class="coach-attachment-kind">${escapeHtml(attachment.kind_label || 'File')}</span>
+          <strong>${escapeHtml(attachment.original_name || 'Attachment')}</strong>
+          <small>${escapeHtml(attachment.size_text || '')}</small>
+          ${preview}
+        </a>
+      `;
+    }
+
+    function renderCoachMessage(message, agentName) {
+      const title = message.role === 'user' ? 'You' : agentName;
+      const attachments = Array.isArray(message.attachments) && message.attachments.length
+        ? `<div class="coach-attachment-list">${message.attachments.map(renderCoachAttachment).join('')}</div>`
+        : '';
+      const actions = Array.isArray(message.actions) && message.actions.length
+        ? `<div class="coach-action-list">${message.actions.map(renderCoachAction).join('')}</div>`
+        : '';
+      return `
+        <article class="coach-message coach-message-${escapeHtml(message.role || 'assistant')}">
+          <div class="coach-message-head">
+            <strong>${escapeHtml(title)}</strong>
+            <small>${escapeHtml(message.created_at_text || '')}</small>
+          </div>
+          <div class="coach-message-body">${escapeHtml(message.content_text || '')}</div>
+          ${attachments}
+          ${actions}
+        </article>
+      `;
+    }
+
+    function renderCoachThreadHost(assistant) {
+      const messages = Array.isArray(assistant.messages) ? assistant.messages : [];
+      if (!messages.length) {
+        return `<p class="muted">${escapeHtml(assistant.available ? (assistant.empty_text || '') : (assistant.offline_text || ''))}</p>`;
+      }
+      return `<div class="coach-thread">${messages.map((message) => renderCoachMessage(message, assistant.agent_name || 'Coach')).join('')}</div>`;
+    }
+
+    function setCoachFeedback(messages, category = 'success') {
+      const feedback = document.querySelector('[data-role="coach-feedback"]');
+      if (!feedback) {
+        return;
+      }
+      const items = Array.isArray(messages) ? messages.filter(Boolean) : [messages].filter(Boolean);
+      if (!items.length) {
+        feedback.hidden = true;
+        feedback.innerHTML = '';
+        return;
+      }
+      feedback.hidden = false;
+      feedback.innerHTML = items.map((message) => `<div class="flash flash-${escapeHtml(category)}">${escapeHtml(message)}</div>`).join('');
+    }
+
+    function setDietFeedback(messages, category = 'success') {
+      const feedback = document.querySelector('[data-role="diet-feedback"]');
+      if (!feedback) {
+        return;
+      }
+      const items = Array.isArray(messages) ? messages.filter(Boolean) : [messages].filter(Boolean);
+      if (!items.length) {
+        feedback.hidden = true;
+        feedback.innerHTML = '';
+        return;
+      }
+      feedback.hidden = false;
+      feedback.innerHTML = items.map((message) => `<div class="flash flash-${escapeHtml(category)}">${escapeHtml(message)}</div>`).join('');
+    }
+
+    function setGymFeedback(messages, category = 'success') {
+      const feedback = document.querySelector('[data-role="gym-feedback"]');
+      if (!feedback) {
+        return;
+      }
+      const items = Array.isArray(messages) ? messages.filter(Boolean) : [messages].filter(Boolean);
+      if (!items.length) {
+        feedback.hidden = true;
+        feedback.innerHTML = '';
+        return;
+      }
+      feedback.hidden = false;
+      feedback.innerHTML = items.map((message) => `<div class="flash flash-${escapeHtml(category)}">${escapeHtml(message)}</div>`).join('');
+    }
+
+    function coachThreadScrollState(thread) {
+      if (!thread) {
+        return null;
+      }
+      const maxScrollTop = Math.max(thread.scrollHeight - thread.clientHeight, 0);
+      const distanceFromBottom = maxScrollTop - thread.scrollTop;
+      return {
+        scrollTop: thread.scrollTop,
+        scrollHeight: thread.scrollHeight,
+        clientHeight: thread.clientHeight,
+        distanceFromBottom,
+        nearBottom: distanceFromBottom <= 32,
+      };
+    }
+
+    function restoreCoachThreadScroll(thread, previousState, forceScrollBottom = false) {
+      if (!thread) {
+        return;
+      }
+      if (forceScrollBottom || !previousState || previousState.nearBottom) {
+        thread.scrollTop = thread.scrollHeight;
+        return;
+      }
+      const maxScrollTop = Math.max(thread.scrollHeight - thread.clientHeight, 0);
+      const targetTop = maxScrollTop - previousState.distanceFromBottom;
+      thread.scrollTop = Math.max(0, Math.min(maxScrollTop, targetTop));
+    }
+
+    function updateCoachView(assistant, options = {}) {
+      if (!assistant) {
+        return;
+      }
+      const forceScrollBottom = Boolean(options.forceScrollBottom);
+      const status = document.querySelector('[data-role="coach-status"]');
+      if (status) {
+        status.textContent = assistant.status_label || '';
+        status.classList.remove('running', 'stopped', 'partial', 'online', 'offline');
+        status.classList.add(assistant.status_class || 'partial');
+      }
+      const summary = document.querySelector('[data-role="coach-summary"]');
+      if (summary) {
+        summary.textContent = assistant.available ? (assistant.empty_text || '') : (assistant.offline_text || '');
+      }
+      const threadHost = document.querySelector('[data-role="coach-thread-host"]');
+      const existingThread = threadHost ? threadHost.querySelector('.coach-thread') : null;
+      const previousScrollState = coachThreadScrollState(existingThread);
+      if (threadHost) {
+        const nextThreadHtml = renderCoachThreadHost(assistant);
+        if (threadHost.innerHTML !== nextThreadHtml) {
+          threadHost.innerHTML = nextThreadHtml;
+        }
+      }
+      const submitButton = document.querySelector('[data-role="coach-submit"]');
+      if (submitButton) {
+        submitButton.disabled = !assistant.available;
+      }
+      wireCoachForms();
+      restoreCoachThreadScroll(
+        threadHost ? threadHost.querySelector('.coach-thread') : null,
+        previousScrollState,
+        forceScrollBottom
+      );
+    }
+
+    function setCoachFormBusy(form, busy, submitter = null) {
+      form.querySelectorAll('button, textarea, input').forEach((field) => {
+        if (field.name === 'csrf_token' || field.type === 'hidden') {
+          return;
+        }
+        if (busy) {
+          field.dataset.previousDisabled = field.disabled ? '1' : '0';
+          field.disabled = true;
+        } else {
+          const previousDisabled = field.dataset.previousDisabled === '1';
+          field.disabled = previousDisabled;
+        }
+      });
+      if (submitter) {
+        if (!submitter.dataset.originalLabel) {
+          submitter.dataset.originalLabel = submitter.textContent;
+        }
+        submitter.textContent = busy
+          ? (form.matches('[data-role="coach-chat-form"]') ? 'Thinking...' : 'Working...')
+          : (submitter.dataset.originalLabel || submitter.textContent);
+      }
+    }
+
+    function updateCoachSelectedFiles(scope = document) {
+      const forms = scope.matches && scope.matches('[data-role="coach-chat-form"]')
+        ? [scope]
+        : Array.from(scope.querySelectorAll('[data-role="coach-chat-form"]'));
+      forms.forEach((form) => {
+        const input = form.querySelector('[data-role="coach-file-input"]');
+        const host = form.querySelector('[data-role="coach-selected-files"]');
+        if (!input || !host) {
+          return;
+        }
+        const files = Array.from(input.files || []);
+        if (!files.length) {
+          host.hidden = true;
+          host.innerHTML = '';
+          return;
+        }
+        host.hidden = false;
+        host.innerHTML = files
+          .map((file) => `<span class="coach-selected-file">${escapeHtml(file.name)} <small>${escapeHtml((file.size / 1024 / 1024).toFixed(file.size >= 1048576 ? 1 : 2))} MB</small></span>`)
+          .join('');
+      });
+    }
+
+    function currentTabId() {
+      const activePanel = document.querySelector('[data-tab-panel].active');
+      return activePanel ? activePanel.dataset.tabPanel : defaultTabId;
+    }
+
+    function updateTabUrl(tabId, options = {}) {
+      const nextTabId = tabId || defaultTabId;
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', nextTabId);
+      if (nextTabId === 'gym') {
+        const gymDay = options.gymDay;
+        if (gymDay && gymDay !== 'today') {
+          url.searchParams.set('gym_day', gymDay);
+        } else {
+          url.searchParams.delete('gym_day');
+        }
+      } else {
+        url.searchParams.delete('gym_day');
+      }
+      window.history.replaceState({}, '', url.toString());
+    }
+
+    function refreshPanelVisuals(tabIds) {
+      const requested = new Set((tabIds || []).filter(Boolean));
+      if (!requested.size) {
+        return;
+      }
+      if (requested.has('diet')) {
+        wireDietItemForms();
+        renderDietHistoryCards();
+      }
+      if (requested.has('gym')) {
+        wireGymExerciseForms();
+        wireExerciseButtons();
+        renderExerciseTrendCharts();
+      }
+      if (requested.has('health')) {
+        renderHealthCharts();
+      }
+      wireCopyButtons();
+    }
+
+    async function refreshDashboardPanels(tabIds) {
+      const uniqueTabIds = Array.from(new Set((tabIds || []).filter(Boolean)));
+      if (!uniqueTabIds.length) {
+        return;
+      }
+      const activeTabId = currentTabId();
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', activeTabId || defaultTabId);
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'text/html',
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`Panel refresh failed with ${response.status}`);
+      }
+      const html = await response.text();
+      const nextDocument = new DOMParser().parseFromString(html, 'text/html');
+      uniqueTabIds.forEach((tabId) => {
+        const currentPanel = document.querySelector(`[data-tab-panel="${tabId}"]`);
+        const nextPanel = nextDocument.querySelector(`[data-tab-panel="${tabId}"]`);
+        if (!currentPanel || !nextPanel) {
+          return;
+        }
+        const isActive = currentPanel.classList.contains('active');
+        currentPanel.replaceWith(nextPanel);
+        nextPanel.classList.toggle('active', isActive);
+        nextPanel.hidden = !isActive;
+      });
+      const nextRefreshNote = nextDocument.querySelector('[data-role="refresh-note"]');
+      const currentRefreshNote = document.querySelector('[data-role="refresh-note"]');
+      if (currentRefreshNote && nextRefreshNote) {
+        currentRefreshNote.textContent = nextRefreshNote.textContent;
+      }
+      refreshPanelVisuals(uniqueTabIds);
+    }
+
+    async function submitCoachForm(form, submitter) {
+      const formData = new FormData(form);
+      if (submitter && submitter.name) {
+        formData.set(submitter.name, submitter.value);
+      }
+      setCoachFormBusy(form, true, submitter);
+      try {
+        const response = await fetch(form.action, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+          },
+          body: formData,
+        });
+        const payload = await response.json();
+        if (payload.assistant) {
+          updateCoachView(payload.assistant, { forceScrollBottom: true });
+        }
+        if (payload.ok && Array.isArray(payload.refresh_tabs) && payload.refresh_tabs.length) {
+          await refreshDashboardPanels(payload.refresh_tabs);
+        }
+        setCoachFeedback(
+          payload.secondary_message ? [payload.message, payload.secondary_message] : payload.message,
+          payload.ok ? 'success' : 'error'
+        );
+        if (payload.ok && form.matches('[data-role="coach-chat-form"]')) {
+          const textarea = form.querySelector('[data-role="coach-textarea"]');
+          if (textarea) {
+            textarea.value = '';
+            textarea.focus();
+          }
+          const fileInput = form.querySelector('[data-role="coach-file-input"]');
+          if (fileInput) {
+            fileInput.value = '';
+          }
+          updateCoachSelectedFiles(form);
+        }
+      } catch (error) {
+        console.debug('Coach request failed', error);
+        setCoachFeedback('The coach request failed. Try again in a moment.', 'error');
+      } finally {
+        setCoachFormBusy(form, false, submitter);
+      }
+    }
+
+    function wireCoachForms(scope = document) {
+      scope.querySelectorAll('[data-role="coach-chat-form"], .coach-action-form').forEach((form) => {
+        if (form.dataset.coachBound === '1') {
+          return;
+        }
+        form.dataset.coachBound = '1';
+        form.addEventListener('submit', (event) => {
+          event.preventDefault();
+          submitCoachForm(form, event.submitter || form.querySelector('button[type="submit"]'));
+        });
+      });
+      scope.querySelectorAll('[data-role="coach-file-input"]').forEach((input) => {
+        if (input.dataset.coachFilesBound === '1') {
+          return;
+        }
+        input.dataset.coachFilesBound = '1';
+        input.addEventListener('change', () => updateCoachSelectedFiles(input.closest('form') || document));
+      });
+      scope.querySelectorAll('[data-role="coach-textarea"]').forEach((textarea) => {
+        if (textarea.dataset.coachTextareaBound === '1') {
+          return;
+        }
+        textarea.dataset.coachTextareaBound = '1';
+        const resize = () => {
+          textarea.style.height = 'auto';
+          textarea.style.height = `${Math.min(textarea.scrollHeight, 220)}px`;
+        };
+        textarea.addEventListener('input', resize);
+        textarea.addEventListener('keydown', (event) => {
+          if (event.key !== 'Enter' || event.shiftKey || event.isComposing) {
+            return;
+          }
+          event.preventDefault();
+          const form = textarea.closest('form');
+          const submitButton = form ? form.querySelector('[data-role="coach-submit"]') || form.querySelector('button[type="submit"]') : null;
+          if (form && submitButton && !submitButton.disabled) {
+            form.requestSubmit(submitButton);
+          }
+        });
+        resize();
+      });
+      updateCoachSelectedFiles(scope);
+    }
+
+    function setDietFormBusy(form, busy, submitter = null) {
+      form.querySelectorAll('button, input').forEach((field) => {
+        if (field.name === 'csrf_token' || field.type === 'hidden') {
+          return;
+        }
+        if (busy) {
+          field.dataset.previousDisabled = field.disabled ? '1' : '0';
+          field.disabled = true;
+        } else {
+          const previousDisabled = field.dataset.previousDisabled === '1';
+          field.disabled = previousDisabled;
+        }
+      });
+      if (submitter) {
+        submitter.classList.toggle('is-busy', busy);
+      }
+    }
+
+    async function submitDietItemForm(form, submitter) {
+      const formData = new FormData(form);
+      if (submitter && submitter.name) {
+        formData.set(submitter.name, submitter.value);
+      }
+      setDietFormBusy(form, true, submitter);
+      try {
+        const response = await fetch(form.action, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+          },
+          body: new URLSearchParams(formData),
+        });
+        const payload = await response.json();
+        if (payload.ok && Array.isArray(payload.refresh_tabs) && payload.refresh_tabs.length) {
+          await refreshDashboardPanels(payload.refresh_tabs);
+        }
+        setDietFeedback(payload.message, payload.ok ? 'success' : 'error');
+      } catch (error) {
+        console.debug('Diet item request failed', error);
+        setDietFeedback('The Diet update failed. Try again in a moment.', 'error');
+      } finally {
+        setDietFormBusy(form, false, submitter);
+      }
+    }
+
+    function wireDietItemForms(scope = document) {
+      scope.querySelectorAll('[data-role="diet-item-form"]').forEach((form) => {
+        if (form.dataset.dietBound === '1') {
+          return;
+        }
+        form.dataset.dietBound = '1';
+        form.addEventListener('submit', (event) => {
+          event.preventDefault();
+          submitDietItemForm(form, event.submitter || form.querySelector('[data-role="diet-item-submit"]'));
+        });
+      });
+    }
+
+    function setGymFormBusy(form, busy, submitter = null) {
+      form.querySelectorAll('button, input').forEach((field) => {
+        if (field.name === 'csrf_token' || field.type === 'hidden') {
+          return;
+        }
+        if (busy) {
+          field.dataset.previousDisabled = field.disabled ? '1' : '0';
+          field.disabled = true;
+        } else {
+          const previousDisabled = field.dataset.previousDisabled === '1';
+          field.disabled = previousDisabled;
+        }
+      });
+      if (submitter) {
+        submitter.classList.toggle('is-busy', busy);
+      }
+    }
+
+    async function submitGymExerciseForm(form, submitter) {
+      const formData = new FormData(form);
+      if (submitter && submitter.name) {
+        formData.set(submitter.name, submitter.value);
+      }
+      setGymFormBusy(form, true, submitter);
+      try {
+        const response = await fetch(form.action, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+          },
+          body: new URLSearchParams(formData),
+        });
+        const payload = await response.json();
+        if (payload.ok && payload.gym_day) {
+          updateTabUrl('gym', { gymDay: payload.gym_day });
+        }
+        if (payload.ok && Array.isArray(payload.refresh_tabs) && payload.refresh_tabs.length) {
+          await refreshDashboardPanels(payload.refresh_tabs);
+        }
+        setGymFeedback(payload.message, payload.ok ? 'success' : 'error');
+      } catch (error) {
+        console.debug('Gym exercise request failed', error);
+        setGymFeedback('The Gym update failed. Try again in a moment.', 'error');
+      } finally {
+        setGymFormBusy(form, false, submitter);
+      }
+    }
+
+    function wireGymExerciseForms(scope = document) {
+      scope.querySelectorAll('[data-role="gym-exercise-form"]').forEach((form) => {
+        if (form.dataset.gymBound === '1') {
+          return;
+        }
+        form.dataset.gymBound = '1';
+        form.addEventListener('submit', (event) => {
+          event.preventDefault();
+          submitGymExerciseForm(form, event.submitter || form.querySelector('button[type="submit"]'));
+        });
+      });
+    }
+
+    function updateServerCard(server) {
+      const card = document.querySelector(`[data-server-id="${server.id}"]`);
+      if (!card) {
+        return;
+      }
+
+      const hostLine = card.querySelector('[data-role="server-host"]');
+      if (hostLine) {
+        const hostText = server.host + (server.snapshot && server.snapshot.hostname ? ` | ${server.snapshot.hostname}` : "");
+        hostLine.textContent = hostText;
+      }
+
+      const status = card.querySelector('[data-role="server-status"]');
+      if (status) {
+        const isOnline = Boolean(server.snapshot && server.snapshot.reachable);
+        status.textContent = isOnline ? "Online" : "Offline";
+        status.classList.remove("online", "offline");
+        status.classList.add(isOnline ? "online" : "offline");
+      }
+
+      const metricGrid = card.querySelector('[data-role="metric-grid"]');
+      if (metricGrid && Array.isArray(server.metrics)) {
+        metricGrid.innerHTML = server.metrics.map(renderMetricCard).join("");
+      }
+
+      const priceBoxSlot = card.querySelector('[data-role="price-box-slot"]');
+      if (priceBoxSlot) {
+        priceBoxSlot.innerHTML = renderPriceBox(server.price_box);
+      }
+    }
+
+    async function fetchLiveState() {
+      try {
+        const response = await fetch(apiUrl, {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+          headers: {
+            "X-Requested-With": "XMLHttpRequest"
+          }
+        });
+        if (!response.ok) {
+          return;
+        }
+        const state = await response.json();
+        const refreshNote = document.querySelector('[data-role="refresh-note"]');
+        if (refreshNote) {
+          refreshNote.textContent = `Last refresh ${state.updated_at}. Live update every ${state.client_poll_seconds} seconds.`;
+        }
+        if (state.assistant) {
+          updateCoachView(state.assistant);
+        }
+        (state.servers || []).forEach(updateServerCard);
+        wireCopyButtons();
+      } catch (error) {
+        console.debug("Live dashboard update failed", error);
+      }
+    }
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        closeExerciseModal();
+      }
+    });
+
+    initializeTabs();
+    scrollCoachThreadToBottom();
+    wireCopyButtons();
+    wireExerciseButtons();
+    wireCoachForms();
+    wireDietItemForms();
+    wireGymExerciseForms();
+    renderHealthCharts();
+    renderDietHistoryCards();
+    renderExerciseTrendCharts();
+    updateCalendarClock();
+    window.setInterval(updateCalendarClock, 1000);
+    window.setInterval(fetchLiveState, pollMs);
+  </script>
+</body>
+</html>

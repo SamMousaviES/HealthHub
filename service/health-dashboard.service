@@ -1,0 +1,17 @@
+[Unit]
+Description=Health subdomain dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=sam
+Group=sam
+WorkingDirectory=/home/sam/Docker/health
+EnvironmentFile=/home/sam/Docker/health/.env
+ExecStart=/home/sam/Docker/health/.venv/bin/python /home/sam/Docker/health/app.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

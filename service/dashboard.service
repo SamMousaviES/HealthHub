@@ -1,0 +1,17 @@
+[Unit]
+Description=Sam server dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=sam
+Group=sam
+WorkingDirectory=/home/sam/Docker/dashboard
+EnvironmentFile=/home/sam/Docker/dashboard/.env
+ExecStart=/home/sam/Docker/dashboard/.venv/bin/python /home/sam/Docker/dashboard/app.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
