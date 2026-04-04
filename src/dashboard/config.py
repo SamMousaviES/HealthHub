@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 
-APP_TITLE = "Control Deck"
+APP_TITLE = "Health Hub"
 REFRESH_SECONDS = int(os.getenv("DASHBOARD_REFRESH_SECONDS", "20"))
 CLIENT_POLL_SECONDS = int(os.getenv("DASHBOARD_CLIENT_POLL_SECONDS", "5"))
 SAMPLE_SECONDS = int(os.getenv("DASHBOARD_SAMPLE_SECONDS", str(REFRESH_SECONDS)))
@@ -59,7 +59,7 @@ AGENT_DISPLAY_NAMES = {
     "diet": "Diet AI Coach",
     "gym": "Gym AI Coach",
 }
-SUPERAGENT_NAME = "Control Deck Coach"
+SUPERAGENT_NAME = "Health Hub Coach"
 ASSISTANT_ALLOWED_ACTIONS = {
     "record_weight_checkin": "Record a weight check-in",
     "record_health_measurement": "Record a health measurement",

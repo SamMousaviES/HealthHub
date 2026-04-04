@@ -11,7 +11,6 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from .config import APP_TITLE, GYM_USER_DB_FILE
 
 
-SERVERS_DISABLED_HOSTS = {"health.sam-mousavi.com"}
 REGISTRATION_DISABLED_HOSTS = {"dashboard.sam-mousavi.com"}
 
 
@@ -351,13 +350,6 @@ def current_request_host() -> str:
     return host_value.split(":", 1)[0].lower()
 
 
-def host_allows_servers() -> bool:
-    host_value = current_request_host()
-    if not host_value:
-        return True
-    return host_value not in SERVERS_DISABLED_HOSTS
-
-
 def host_allows_registration() -> bool:
     host_value = current_request_host()
     if not host_value:
@@ -365,32 +357,17 @@ def host_allows_registration() -> bool:
     return host_value not in REGISTRATION_DISABLED_HOSTS
 
 
-def can_view_servers(username: str | None = None) -> bool:
-    if not host_allows_servers():
-        return False
-    current = normalize_username(username if username is not None else viewer_username())
-    if not current:
-        return False
-    row = _account_row_for_username(current)
-    if row:
-        return str(row["role"] or "member").strip().lower() == "admin" and int(row["is_active"] or 0) == 1
-    return current == dashboard_username()
-
-
-def dashboard_sections(server_access: bool):
-    sections = [
+def dashboard_sections():
+    return [
         {"id": "diet", "label": "Diet"},
         {"id": "gym", "label": "Gym"},
         {"id": "health", "label": "Health"},
         {"id": "coach", "label": "Coach"},
     ]
-    if server_access:
-        sections.append({"id": "servers", "label": "Servers"})
-    return sections
 
 
-def resolve_dashboard_tab(server_access: bool, preferred_tab: str | None = None, health_needs_profile_setup: bool = False):
-    section_ids = {item["id"] for item in dashboard_sections(server_access)}
+def resolve_dashboard_tab(preferred_tab: str | None = None, health_needs_profile_setup: bool = False):
+    section_ids = {item["id"] for item in dashboard_sections()}
     requested = (preferred_tab or "").strip().lower()
     if requested in section_ids:
         return requested

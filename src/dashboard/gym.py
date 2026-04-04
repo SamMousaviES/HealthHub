@@ -59,7 +59,7 @@ def build_gym_agent_prompt(profile: dict, plan: dict, sessions: list[dict]):
         "recent_sessions": recent_sessions,
     }
     return (
-        "You are the Gym AI Coach for a private personal dashboard.\n"
+        "You are the Gym AI Coach for Health Hub.\n"
         "Return JSON only with keys headline, bullets, watchout.\n"
         "Rules:\n"
         "- headline: one short sentence\n"

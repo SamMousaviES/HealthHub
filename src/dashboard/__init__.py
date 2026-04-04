@@ -1,1 +1,1 @@
-"""Dashboard support modules for incremental refactors."""
+"""Health Hub support modules for incremental refactors."""

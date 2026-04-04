@@ -1,8 +1,8 @@
 # Health Subdomain Project
 
-Separate movable copy of the Control Deck app for `health.sam-mousavi.com`.
+Separate movable copy of the Health Hub app for `health.sam-mousavi.com`.
 
-This copy is intended to run independently from the main dashboard deployment:
+This copy is intended to run independently from the main hub deployment:
 
 - no `Servers` tab on the health hostname
 - its own user database
@@ -19,7 +19,7 @@ Use this project when you want a health-focused deployment that keeps:
 - `Gym`
 - `Coach`
 
-and leaves infrastructure controls only on the main dashboard host.
+and leaves infrastructure controls only on the main hub host.
 
 ## Project Layout
 
@@ -34,7 +34,7 @@ and leaves infrastructure controls only on the main dashboard host.
 
 ## Data Separation
 
-This project should not share its runtime files with the main dashboard deployment.
+This project should not share its runtime files with the main hub deployment.
 
 Keep these health-local paths separate:
 
@@ -112,6 +112,6 @@ Typical deploy flow:
 
 ## Notes
 
-- This copy is designed to be separate from the main dashboard deployment.
-- If you also run `dashboard.sam-mousavi.com`, point that deployment at different DB and storage paths.
+- This copy is designed to be separate from the main hub deployment.
+- If you also run `dashboard.sam-mousavi.com`, keep that main hub deployment on different DB and storage paths.
 - `118` remains optional AI compute only. The health site should keep working even when `118` is offline.

@@ -10,7 +10,7 @@
   <main class="login-panel login-panel-wide">
     <div class="eyebrow">{{ public_host }}</div>
     <h1>{{ app_title }}</h1>
-    <p class="muted">Health, diet, gym, coach, and server controls in one private dashboard.</p>
+    <p class="muted">Health, diet, gym, and coach in one private Health Hub.</p>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
@@ -37,7 +37,7 @@
             <span>Password</span>
             <input type="password" name="password" autocomplete="current-password" required>
           </label>
-          <button type="submit" class="primary">Enter Dashboard</button>
+          <button type="submit" class="primary">Enter Health Hub</button>
         </form>
       </section>
 
@@ -45,7 +45,7 @@
         <section class="auth-card{{ ' active' if active_auth_panel == 'register' else '' }}">
           <div class="content-kicker">Register</div>
           <h2>Create a new user</h2>
-          <p class="muted">New users start as members without the Servers tab. Capture the main body profile now so Diet, Gym, and Health start with real data.</p>
+          <p class="muted">New users start as members. Capture the main body profile now so Diet, Gym, and Health start with real data.</p>
           <form method="post" action="{{ url_for('register') }}" class="login-form auth-form-register">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <div class="form-grid tight">

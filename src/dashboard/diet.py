@@ -52,7 +52,7 @@ def build_diet_agent_prompt(profile: dict, plan: dict):
         },
     }
     return (
-        "You are the Diet AI Coach for a private personal dashboard.\n"
+        "You are the Diet AI Coach for Health Hub.\n"
         "Return JSON only with keys headline, bullets, watchout.\n"
         "Rules:\n"
         "- headline: one short sentence\n"

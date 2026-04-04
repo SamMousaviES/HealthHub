@@ -1,5 +1,5 @@
 [Unit]
-Description=Health subdomain dashboard
+Description=Health Hub service
 After=network-online.target
 Wants=network-online.target
 

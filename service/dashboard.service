@@ -1,5 +1,5 @@
 [Unit]
-Description=Sam server dashboard
+Description=Main Health Hub service
 After=network-online.target
 Wants=network-online.target
 
