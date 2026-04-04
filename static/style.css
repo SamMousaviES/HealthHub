@@ -1279,6 +1279,61 @@ body {
   font-size: 14px;
 }
 
+.weight-log-layout {
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.weight-record-panel {
+  border: 1px solid rgba(189, 223, 214, 0.12);
+  border-radius: 20px;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.03);
+  display: grid;
+  gap: 14px;
+}
+
+.weight-record-panel .card-head {
+  align-items: center;
+}
+
+.weight-record-form {
+  margin-top: 0;
+}
+
+.weight-entry-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.weight-entry-field {
+  display: grid;
+  gap: 8px;
+}
+
+.weight-entry-field > span {
+  min-height: 2.35rem;
+  display: flex;
+  align-items: flex-end;
+  line-height: 1.25;
+}
+
+.weight-entry-field input {
+  min-height: 52px;
+  padding: 14px 16px;
+  font-size: 1.05rem;
+  text-align: center;
+  font-family: "IBM Plex Mono", "Cascadia Code", monospace;
+}
+
+.weight-entry-submit {
+  min-height: 52px;
+  align-self: end;
+}
+
 .exercise-modal {
   position: fixed;
   inset: 0;
@@ -2108,6 +2163,10 @@ button.danger {
     width: 100%;
     min-height: 48px;
   }
+
+  .weight-log-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 1180px) {
@@ -2158,5 +2217,9 @@ button.danger {
   .coach-chat-form textarea {
     min-height: 52px;
     font-size: 16px;
+  }
+
+  .weight-entry-row {
+    grid-template-columns: 1fr;
   }
 }

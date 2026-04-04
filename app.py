@@ -30,7 +30,6 @@ from waitress import serve
 
 from src.dashboard.auth import (
     authenticate_dashboard_user,
-    can_view_servers,
     compose_display_name,
     dashboard_accounts,
     dashboard_password,
@@ -637,7 +636,7 @@ SERVICES = {
                 "nextcloud-aio-collabora",
             ],
             "url": "https://nc.sam-mousavi.com",
-            "description": "Primary Nextcloud stack. Monitored here, but not controllable from the dashboard.",
+            "description": "Primary Nextcloud stack. Monitored here, but not controllable from Health Hub.",
         },
         {
             "id": "paperless",
@@ -2729,6 +2728,27 @@ def recent_body_measurements(username: str, limit: int = 8):
     return [dict(row) for row in rows]
 
 
+def build_body_measurement_chart(field: dict, measurements: list[dict]):
+    points = []
+    for item in measurements:
+        value = item.get(field["key"])
+        if value is None:
+            continue
+        points.append(
+            {
+                "date": item.get("measured_on") or "",
+                "value": round(float(value), 1),
+            }
+        )
+    latest_value = points[-1]["value"] if points else None
+    return {
+        **field,
+        "points": points,
+        "point_count": len(points),
+        "latest_value_text": f"{latest_value:.1f} {field['unit']}" if latest_value is not None else "No data yet",
+    }
+
+
 def load_coach_insight(username: str, agent_key: str, context_key: str):
     user_id = ensure_app_user(username)
     with gym_user_connection() as connection:
@@ -4424,7 +4444,7 @@ def enrich_assistant_image_attachments(prepared_attachments: list[dict], user_me
     for index, item in enumerate(image_items):
         if not enabled:
             item["analysis_text"] = (
-                "Image attached. Automatic meal-photo analysis is not configured on the dashboard server yet."
+                "Image attached. Automatic meal-photo analysis is not configured on this Health Hub server yet."
             )
             item["preview_text"] = "Image attached. Meal-photo analysis is not configured yet."
             item["analysis_json"] = json.dumps({"summary": "Meal-photo analysis not configured.", "items": [], "notes": []}, sort_keys=True)
@@ -5951,7 +5971,7 @@ def _legacy_build_diet_agent_prompt(profile: dict, plan: dict):
         },
     }
     return (
-        "You are the Diet AI Coach for a private personal dashboard.\n"
+        "You are the Diet AI Coach for Health Hub.\n"
         "Return JSON only with keys headline, bullets, watchout.\n"
         "Rules:\n"
         "- headline: one short sentence\n"
@@ -6265,7 +6285,7 @@ def _legacy_build_gym_agent_prompt(profile: dict, plan: dict, sessions: list[dic
         "recent_sessions": recent_sessions,
     }
     return (
-        "You are the Gym AI Coach for a private personal dashboard.\n"
+        "You are the Gym AI Coach for Health Hub.\n"
         "Return JSON only with keys headline, bullets, watchout.\n"
         "Rules:\n"
         "- headline: one short sentence\n"
@@ -6397,28 +6417,9 @@ def build_health_state(username: str):
         measurements,
         key=lambda item: ((item.get("measured_on") or ""), safe_int(item.get("id"), 0) or 0),
     )
-    charts = []
-    for field in HEALTH_MEASUREMENT_FIELDS:
-        points = []
-        for item in ordered_measurements:
-            value = item.get(field["key"])
-            if value is None:
-                continue
-            points.append(
-                {
-                    "date": item.get("measured_on") or "",
-                    "value": round(float(value), 1),
-                }
-            )
-        latest_value = points[-1]["value"] if points else None
-        charts.append(
-            {
-                **field,
-                "points": points,
-                "point_count": len(points),
-                "latest_value_text": f"{latest_value:.1f} {field['unit']}" if latest_value is not None else "No data yet",
-            }
-        )
+    weight_field = next((field for field in HEALTH_MEASUREMENT_FIELDS if field["key"] == "weight_kg"), None)
+    charts = [build_body_measurement_chart(field, ordered_measurements) for field in HEALTH_MEASUREMENT_FIELDS if field["key"] != "weight_kg"]
+    weight_chart = build_body_measurement_chart(weight_field, ordered_measurements) if weight_field else None
     return {
         "profile": profile,
         "goal_options": [{"value": key, "label": label} for key, label in GYM_PROFILE_GOALS.items()],
@@ -6429,6 +6430,7 @@ def build_health_state(username: str):
         "measurements": measurements,
         "latest_measurement": latest_measurement,
         "charts": charts,
+        "weight_chart": weight_chart,
         "today_iso": datetime.now().date().isoformat(),
         "needs_profile_setup": not profile.get("height_cm") or not profile.get("current_weight_kg"),
     }
@@ -6838,7 +6840,7 @@ def apply_assistant_action(username: str, action_id: int, decision: str):
                         "nutrients": item_spec["per_serving_nutrients"],
                         "aliases": [raw_food_name] if raw_food_name else [],
                     },
-                    source_label="Control Deck Coach",
+                    source_label="Health Hub Coach",
                     source_kind="assistant_generated" if (requested_item.get("calories") is not None or requested_item.get("serving_text") or requested_item.get("nutrients")) else "assistant",
                 )
                 stored_items.append(
@@ -7034,7 +7036,7 @@ def build_assistant_state(username: str, agent_available: bool = False):
         "status_class": "running" if agent_available else "stopped",
         "messages": messages,
         "empty_text": "Ask about body data, today's meals, attached meal photos, or changing your regular gym plan. If scope is unclear, the coach should ask whether you mean today only or the regular plan before proposing a change.",
-        "offline_text": "MSI is offline, so the coach chat is paused. Your normal dashboard data is still available.",
+        "offline_text": "MSI is offline, so the coach chat is paused. Your normal Health Hub data is still available.",
         "attachment_policy": {
             "accept_text": coach_attachment_accept_text(),
             "max_files": COACH_ATTACHMENT_MAX_FILES_PER_MESSAGE,
@@ -7045,7 +7047,7 @@ def build_assistant_state(username: str, agent_available: bool = False):
             "image_hint": (
                 "Meal photos are analyzed into food guesses before the coach replies."
                 if image_analysis_enabled
-                else "Attach text, CSV, JSON, XLSX, or PDF files. Image uploads stay disabled until DASHBOARD_OPENAI_API_KEY is configured on server 106."
+                else "Attach text, CSV, JSON, XLSX, or PDF files. Image uploads stay disabled until DASHBOARD_OPENAI_API_KEY is configured for Health Hub on server 106."
             ),
         },
     }
@@ -7669,11 +7671,6 @@ def _legacy_viewer_username() -> str:
     return normalize_username(session.get("username", ""))
 
 
-def _legacy_can_view_servers(username: str | None = None) -> bool:
-    current = normalize_username(username if username is not None else viewer_username())
-    return current == "sam"
-
-
 def _legacy_dashboard_sections(server_access: bool):
     sections = [
         {"id": "diet", "label": "Diet"},
@@ -7681,13 +7678,11 @@ def _legacy_dashboard_sections(server_access: bool):
         {"id": "health", "label": "Health"},
         {"id": "coach", "label": "Coach"},
     ]
-    if server_access:
-        sections.append({"id": "servers", "label": "Servers"})
     return sections
 
 
 def _legacy_resolve_dashboard_tab(server_access: bool, preferred_tab: str | None = None, health_needs_profile_setup: bool = False):
-    section_ids = {item["id"] for item in dashboard_sections(server_access)}
+    section_ids = {item["id"] for item in dashboard_sections()}
     requested = (preferred_tab or "").strip().lower()
     if requested in section_ids:
         return requested
@@ -8020,7 +8015,6 @@ def server_state(server_id: str, snapshot: dict, server_history: dict, updated_a
 def build_dashboard(username: str | None = None, preferred_tab: str | None = None, gym_day: str | None = None):
     updated_at, snapshots, history, fortum_box = current_cached_state()
     current_username = normalize_username(username if username is not None else viewer_username())
-    server_access = can_view_servers(current_username)
     viewer_display_name = display_name_for_username(current_username or dashboard_username())
     agent_available = bool((snapshots.get("118") or {}).get("reachable"))
     diet_state = build_diet_state(current_username or dashboard_username(), agent_available=agent_available)
@@ -8031,9 +8025,8 @@ def build_dashboard(username: str | None = None, preferred_tab: str | None = Non
         "viewer_username": current_username,
         "viewer_display_name": viewer_display_name,
         "app_title": viewer_app_title(current_username or dashboard_username()),
-        "can_view_servers": server_access,
-        "sections": dashboard_sections(server_access),
-        "default_tab": resolve_dashboard_tab(server_access, preferred_tab, health_state.get("needs_profile_setup", False)),
+        "sections": dashboard_sections(),
+        "default_tab": resolve_dashboard_tab(preferred_tab, health_state.get("needs_profile_setup", False)),
         "diet": diet_state,
         "gym": gym_state,
         "health": health_state,
@@ -8041,10 +8034,6 @@ def build_dashboard(username: str | None = None, preferred_tab: str | None = Non
         "updated_at": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(updated_at or time.time())),
         "refresh_seconds": REFRESH_SECONDS,
         "client_poll_seconds": CLIENT_POLL_SECONDS,
-        "servers": [
-            server_state("106", snapshots.get("106", {"reachable": False, "containers": []}), history.get("106", {}), updated_at),
-            server_state("118", snapshots.get("118", {"reachable": False, "containers": []}), history.get("118", {}), updated_at, fortum_box),
-        ] if server_access else [],
     }
 
 
@@ -8189,7 +8178,7 @@ def render_login_page(
         active_auth_panel=active_form,
         register_data=values,
         allow_registration=allow_registration,
-        public_host=current_host or "dashboard.sam-mousavi.com",
+        public_host=current_host or "health.sam-mousavi.com",
         goal_options=[{"value": key, "label": label} for key, label in GYM_PROFILE_GOALS.items()],
         gender_options=[{"value": key, "label": label} for key, label in HEALTH_GENDER_OPTIONS.items()],
         meal_count_options=[{"value": value, "label": f"{value} meals"} for value in DIET_MEAL_COUNT_OPTIONS],
@@ -8262,7 +8251,7 @@ def login():
             ensure_app_user(authenticated_username)
             ensure_csrf_token()
             return redirect(url_for("index"))
-        flash("Login failed. Check the dashboard username and password.", "error")
+        flash("Login failed. Check the Health Hub username and password.", "error")
         return render_login_page(login_username=username, active_form="login", status_code=401)
     return render_login_page()
 
@@ -8314,7 +8303,7 @@ def register():
     session["authenticated"] = True
     session["username"] = authenticated_username
     ensure_csrf_token()
-    flash("Account created. Welcome to Control Deck.", "success")
+    flash("Account created. Welcome to Health Hub.", "success")
     return redirect(url_for("index"))
 
 
@@ -8605,70 +8594,7 @@ def health_measurement():
 @app.route("/action", methods=["POST"])
 @login_required
 def action():
-    if not verify_csrf():
-        flash("Security token mismatch. Reload the page and try again.", "error")
-        return redirect(url_for("index"))
-    if not can_view_servers():
-        flash("Server controls are only available for sam.", "error")
-        return redirect(url_for("index"))
-
-    server_id = request.form.get("server_id", "")
-    action_name = request.form.get("action", "")
-    if server_id not in SERVERS:
-        flash("Unknown server selected.", "error")
-        return redirect(url_for("index"))
-
-    try:
-        if request.form.get("scope") == "setting":
-            setting_id = request.form.get("setting_id", "")
-            if setting_id != "msi_auto_poweroff_threshold":
-                flash("Unknown setting selected.", "error")
-                return redirect(url_for("index"))
-            raw_value = request.form.get("value", "").strip().replace(",", ".")
-            try:
-                threshold_value = float(raw_value)
-            except ValueError:
-                flash("Enter a valid numeric threshold.", "error")
-                return redirect(url_for("index"))
-            if threshold_value <= 0 or threshold_value > 100:
-                flash("Threshold must be between 0 and 100 c/kWh.", "error")
-                return redirect(url_for("index"))
-            update_msi_auto_poweroff_threshold(threshold_value)
-            reset_fortum_cache()
-            refresh_state_once()
-            flash(f"MSI auto power-off threshold set to {threshold_value:.3f} c/kWh.", "success")
-            return redirect(url_for("index"))
-
-        if request.form.get("scope") == "host":
-            if server_id == "106":
-                message = local_host_action(action_name)
-            else:
-                message = remote_host_action(action_name)
-            flash(message, "success")
-            return redirect(url_for("index"))
-
-        service_id = request.form.get("service_id", "")
-        service = next((item for item in SERVICES[server_id] if item["id"] == service_id), None)
-        if not service:
-            flash("Unknown service selected.", "error")
-            return redirect(url_for("index"))
-        if service["control_mode"] == "read_only":
-            flash(f"{service['name']} is view-only in this dashboard.", "error")
-            return redirect(url_for("index"))
-
-        if server_id == "106":
-            result = local_service_action(service, action_name)
-        else:
-            result = remote_service_action(service, action_name)
-        if result.returncode == 0:
-            flash(f"{service['name']} -> {action_name} completed.", "success")
-        else:
-            message = (result.stderr or result.stdout or "Unknown failure").strip()
-            flash(f"{service['name']} -> {action_name} failed: {message}", "error")
-    except Exception as exc:
-        flash(str(exc), "error")
-
-    return redirect(url_for("index"))
+    abort(404)
 
 
 @app.template_filter("percent")
