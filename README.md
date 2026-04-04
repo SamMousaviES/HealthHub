@@ -113,5 +113,5 @@ Typical deploy flow:
 ## Notes
 
 - This copy is designed to be separate from the main hub deployment.
-- If you also run `dashboard.sam-mousavi.com`, keep that main hub deployment on different DB and storage paths.
+- If you also run a separate main hub deployment, keep it on different DB and storage paths.
 - `118` remains optional AI compute only. The health site should keep working even when `118` is offline.

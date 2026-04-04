@@ -11,7 +11,11 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from .config import APP_TITLE, GYM_USER_DB_FILE
 
 
-REGISTRATION_DISABLED_HOSTS = {"dashboard.sam-mousavi.com"}
+REGISTRATION_DISABLED_HOSTS = {
+    item.strip().lower()
+    for item in str(os.getenv("HEALTH_REGISTRATION_DISABLED_HOSTS", "") or "").split(",")
+    if item.strip()
+}
 
 
 def normalize_username(value: str | None):

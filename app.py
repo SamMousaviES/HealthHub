@@ -4413,7 +4413,7 @@ def analyze_diet_image_attachment(data: bytes, mime_type: str, user_message: str
     headers = {
         "Authorization": f"Bearer {OPENAI_API_KEY}",
         "Content-Type": "application/json",
-        "X-Client-Request-Id": f"dashboard-meal-photo-{uuid.uuid4()}",
+        "X-Client-Request-Id": f"healthhub-meal-photo-{uuid.uuid4()}",
     }
     request_obj = urllib.request.Request(
         f"{OPENAI_API_BASE_URL.rstrip('/')}/responses",
@@ -7433,7 +7433,7 @@ def start_sampler():
         return
     HISTORY_CACHE = load_history()
     refresh_state_once()
-    thread = threading.Thread(target=sampler_loop, name="dashboard-sampler", daemon=True)
+    thread = threading.Thread(target=sampler_loop, name="healthhub-sampler", daemon=True)
     thread.start()
     SAMPLER_STARTED = True
 
