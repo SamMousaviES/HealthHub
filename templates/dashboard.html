@@ -88,7 +88,7 @@
   <header class="topbar">
     <div class="topbar-main">
       <div>
-        <div class="eyebrow">{{ state.viewer_display_name }} dashboard</div>
+        <div class="eyebrow">{{ state.viewer_display_name }} Health Hub</div>
         <h1>{{ app_title }}</h1>
         <p class="muted" data-role="refresh-note">Last refresh {{ state.updated_at }}. Live update every {{ state.client_poll_seconds }} seconds.</p>
       </div>
@@ -702,10 +702,71 @@
           </details>
         </article>
 
+        <article class="content-card content-card-wide weight-log-card">
+          <div class="content-kicker">Weight</div>
+          <h2>Weight vs Date</h2>
+          <p class="muted">Record weigh-ins without entering a date. The app saves today's date automatically so this box only needs a weight.</p>
+          <div class="two-col weight-log-layout">
+            <article
+              class="health-chart-card weight-chart-card"
+              data-role="health-chart-card"
+              data-health-label="{{ health.weight_chart.label }}"
+              data-health-unit="{{ health.weight_chart.unit }}"
+              data-health-points='{{ health.weight_chart.points|tojson }}'
+            >
+              <div class="card-head">
+                <div>
+                  <strong>{{ health.weight_chart.label }}</strong>
+                  <p class="muted">{{ health.weight_chart.point_count }} saved weigh-in{{ '' if health.weight_chart.point_count == 1 else 's' }}</p>
+                </div>
+                <div class="health-chart-latest">{{ health.weight_chart.latest_value_text }}</div>
+              </div>
+              <div class="health-chart-stage">
+                <svg
+                  class="health-chart-svg"
+                  data-role="health-chart-svg"
+                  viewBox="0 0 320 160"
+                  preserveAspectRatio="none"
+                  role="img"
+                  aria-label="{{ health.weight_chart.label }} trend over time"
+                ></svg>
+                <div class="health-chart-tooltip" data-role="health-chart-tooltip" hidden></div>
+              </div>
+              <small class="muted" data-role="health-chart-caption">
+                {% if health.weight_chart.point_count %}
+                  Latest {{ health.weight_chart.latest_value_text }}
+                {% else %}
+                  No saved weight yet. Record one to start this plot.
+                {% endif %}
+              </small>
+            </article>
+
+            <article class="weight-record-panel">
+              <div class="card-head">
+                <div>
+                  <strong>Record a weigh-in</strong>
+                  <p class="muted">Only enter weight here. Today's date is saved automatically.</p>
+                </div>
+              </div>
+              <form method="post" action="{{ url_for('health_measurement') }}" class="dashboard-form profile-form weight-record-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="return_tab" value="health">
+                <div class="weight-entry-row">
+                  <label class="weight-entry-field">
+                    <span>Weight (kg)</span>
+                    <input type="number" name="weight_kg" min="0" max="300" step="0.1" inputmode="decimal" placeholder="Enter weight">
+                  </label>
+                  <button type="submit" class="primary weight-entry-submit">Record Weight</button>
+                </div>
+              </form>
+            </article>
+          </div>
+        </article>
+
         <article class="content-card content-card-wide checkin-card">
           <div class="content-kicker">Check-in</div>
-          <h2>Record Weight &amp; Measurements</h2>
-          <p class="muted">Save a quick health check-in to track weight and body changes over time.</p>
+          <h2>Record Size &amp; Weight</h2>
+          <p class="muted">Use this for full body check-ins with arm, chest, waist, thigh, and calf measurements. Weight-only entries belong in the separate log above.</p>
           <form method="post" action="{{ url_for('health_measurement') }}" class="dashboard-form profile-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="return_tab" value="health">
@@ -752,7 +813,7 @@
         <article class="content-card content-card-wide">
           <div class="content-kicker">Trends</div>
           <h2>Interactive Health Trends</h2>
-          <p class="muted">Every saved measurement stays in the database. Hover or tap a point to inspect the recorded value for each body metric.</p>
+          <p class="muted">Every saved measurement stays in the database. Hover or tap a point to inspect the recorded value for each body-size metric. Weight is tracked in the separate log above.</p>
           <div class="health-chart-grid">
             {% for chart in health.charts %}
               <article
@@ -938,281 +999,6 @@
       </div>
     </section>
 
-    {% if state.can_view_servers %}
-      <section
-        class="tab-panel{{ ' active' if state.default_tab == 'servers' else '' }}"
-        id="panel-servers"
-        data-tab-panel="servers"
-        role="tabpanel"
-        aria-labelledby="tab-servers"
-        {% if state.default_tab != 'servers' %}hidden{% endif %}
-      >
-        <div class="board">
-    {% for server in state.servers %}
-      {% set snapshot = server.snapshot %}
-      <section class="server-card {{ server.accent }}" data-server-id="{{ server.id }}">
-        <div class="server-head">
-          <div>
-            <div class="server-kicker">{{ server.name }}</div>
-            <h2>{{ server.label }}</h2>
-            <p class="muted" data-role="server-host">{{ server.host }}{% if snapshot.hostname %} | {{ snapshot.hostname }}{% endif %}</p>
-          </div>
-          <div class="status-pill {{ 'online' if snapshot.reachable else 'offline' }}" data-role="server-status">
-            {{ 'Online' if snapshot.reachable else 'Offline' }}
-          </div>
-        </div>
-
-        {% if snapshot.reachable %}
-          <div class="metric-grid" data-role="metric-grid">
-            {% for metric in server.metrics %}
-            <article class="metric-tile {{ metric.css_class }}" data-metric-key="{{ metric.key }}">
-              <span>{{ metric.label }}</span>
-              <strong data-role="metric-value">{{ metric.value_text }}</strong>
-              <div class="sparkline-wrap">
-                <div class="sparkline-head">
-                  <small>{{ metric.chart.window_label }}</small>
-                  <small data-role="metric-samples">{{ metric.chart.sample_count }} samples</small>
-                </div>
-                <svg
-                  class="sparkline"
-                  viewBox="0 0 {{ metric.chart.width }} {{ metric.chart.height }}"
-                  preserveAspectRatio="none"
-                  role="img"
-                  aria-label="{{ metric.label }} trend over the last 10 minutes"
-                >
-                  <rect class="sparkline-frame" x="0.5" y="0.5" width="{{ metric.chart.width - 1 }}" height="{{ metric.chart.height - 1 }}" rx="10"></rect>
-                  <path class="sparkline-guide" d="M 0 {{ metric.chart.mid_y }} L {{ metric.chart.width }} {{ metric.chart.mid_y }}"></path>
-                  {% for path in metric.chart.area_paths %}
-                    <path class="sparkline-area" d="{{ path }}"></path>
-                  {% endfor %}
-                  {% for path in metric.chart.line_paths %}
-                    <path class="sparkline-line" d="{{ path }}"></path>
-                  {% endfor %}
-                  {% if metric.chart.has_data %}
-                    <circle class="sparkline-dot" cx="{{ metric.chart.last_x }}" cy="{{ metric.chart.last_y }}" r="2.8"></circle>
-                  {% endif %}
-                </svg>
-              </div>
-              <small data-role="metric-detail">{{ metric.detail_text }}</small>
-            </article>
-            {% endfor %}
-          </div>
-
-          {% if server.price_box or server.host_actions %}
-            <div class="server-tools{{ ' single-action-center' if server.id == '106' else ' price-above-actions' if server.id == '118' else '' }}">
-              {% if server.id == "118" %}
-                <div class="price-box-slot" data-role="price-box-slot">
-                  {% if server.price_box %}
-                    <article class="price-box {{ server.price_box.status }}">
-                      <div class="price-box-head">
-                        <div>
-                          <span class="price-box-kicker">{{ server.price_box.title }}</span>
-                          <p class="price-box-subtitle">{{ server.price_box.subtitle }}</p>
-                        </div>
-                        <a href="{{ server.price_box.source_url }}" class="price-box-link" target="_blank" rel="noreferrer">{{ server.price_box.source_label }}</a>
-                      </div>
-                      <div class="price-box-grid">
-                        <div class="price-box-stat">
-                          <span>{{ server.price_box.current_label }}</span>
-                          <strong>{{ server.price_box.current_value_text }}</strong>
-                        </div>
-                        <div class="price-box-stat">
-                          <span>{{ server.price_box.average_label }}</span>
-                          <strong>{{ server.price_box.average_value_text }}</strong>
-                        </div>
-                        <form method="post" action="{{ url_for('action') }}" class="price-box-stat threshold-inline-form">
-                          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                          <input type="hidden" name="scope" value="setting">
-                          <input type="hidden" name="server_id" value="{{ server.id }}">
-                          <input type="hidden" name="setting_id" value="msi_auto_poweroff_threshold">
-                          <label class="threshold-inline-label">
-                            <span>{{ server.price_box.threshold_label }}</span>
-                            <input type="number" name="value" min="0.001" max="100" step="0.001" value="{{ '%.3f'|format(server.price_box.threshold_value or 0) }}" inputmode="decimal">
-                          </label>
-                          <button type="submit" class="ghost">Save</button>
-                        </form>
-                      </div>
-                      <div class="price-box-meta">
-                        <small>{{ server.price_box.period_text }}</small>
-                        <small>{{ server.price_box.meta_text }}</small>
-                      </div>
-                      {% if server.price_box.status_note %}
-                        <p class="muted tiny">{{ server.price_box.status_note }}</p>
-                      {% endif %}
-                    </article>
-                  {% endif %}
-                </div>
-              {% endif %}
-              {% if server.host_actions %}
-                <div class="host-action-stack{{ ' centered' if server.id == '106' else '' }}">
-                  <div class="host-actions">
-                    {% for host_action in server.host_actions %}
-                      {% if not host_action.show_when_offline %}
-                      <form method="post" action="{{ url_for('action') }}">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <input type="hidden" name="scope" value="host">
-                        <input type="hidden" name="server_id" value="{{ server.id }}">
-                        <input type="hidden" name="action" value="{{ host_action.id }}">
-                        <button type="submit" class="{{ host_action.button_class }}">{{ host_action.label }}</button>
-                      </form>
-                      {% endif %}
-                    {% endfor %}
-                  </div>
-                  {% if server.host_note and server.id != "118" %}
-                    <p class="muted tiny{{ ' centered-note' if server.id == '106' else '' }}">{{ server.host_note }}</p>
-                  {% endif %}
-                </div>
-              {% endif %}
-            </div>
-          {% endif %}
-
-          {% if snapshot.container_error %}
-            <p class="error-text">Docker query warning: {{ snapshot.container_error }}</p>
-          {% endif %}
-
-          <div class="service-grid">
-            {% for service in server.services %}
-              <article class="service-card">
-                <div class="service-top">
-                  <div class="service-title">
-                    <span class="service-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" focusable="false">
-                        <use href="#icon-{{ service.icon or 'layout' }}"></use>
-                      </svg>
-                    </span>
-                    <div>
-                    <h3>{{ service.name }}</h3>
-                    <p class="muted">{{ service.description }}</p>
-                    </div>
-                  </div>
-                  <div class="status-pill {{ service.state }}">{{ service.state|replace('_', ' ')|title }}</div>
-                </div>
-
-                <p class="service-summary">{{ service.state_text }}</p>
-
-                {% if service.details %}
-                  <div class="service-details">
-                    {% for item in service.details %}
-                      <div class="service-detail">
-                        <span>{{ item.label }}</span>
-                        <div class="service-detail-value">
-                          <code>{{ item.value }}</code>
-                          <button
-                            type="button"
-                            class="copy-button"
-                            data-copy-value="{{ item.value }}"
-                            data-copy-label="{{ item.label }}"
-                            aria-label="Copy {{ item.label }}"
-                            title="Copy {{ item.label }}"
-                          >
-                            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-                              <use href="#icon-copy"></use>
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                    {% endfor %}
-                  </div>
-                {% endif %}
-
-                {% if service.url %}
-                  <a href="{{ service.url }}" class="service-link" target="_blank" rel="noreferrer">Open Service</a>
-                {% endif %}
-
-                <div class="container-list">
-                  {% for item in service.containers %}
-                    {% set match = (service.containers_found | selectattr('name', 'equalto', item) | list | first) %}
-                    <div class="container-chip {{ match and ('running' if match.status_text.lower().startswith('up') else 'stopped') or 'missing' }}">
-                      <span>{{ item }}</span>
-                      <small>{{ match.status_text if match else 'not detected' }}</small>
-                    </div>
-                  {% endfor %}
-                </div>
-
-                {% if service.actions %}
-                  <div class="action-row">
-                    {% for action_name in service.actions %}
-                      <form method="post" action="{{ url_for('action') }}">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <input type="hidden" name="scope" value="service">
-                        <input type="hidden" name="server_id" value="{{ server.id }}">
-                        <input type="hidden" name="service_id" value="{{ service.id }}">
-                        <input type="hidden" name="action" value="{{ action_name }}">
-                        <button type="submit" class="{{ 'warn' if action_name == 'restart' else 'ghost' }}">{{ action_name|title }}</button>
-                      </form>
-                    {% endfor %}
-                  </div>
-                {% else %}
-                  <p class="muted tiny">Read-only service to avoid accidental downtime.</p>
-                {% endif %}
-              </article>
-            {% endfor %}
-          </div>
-        {% else %}
-          <div class="offline-panel">
-            {% if server.id == "118" and server.price_box %}
-              <div class="price-box-slot" data-role="price-box-slot">
-                <article class="price-box {{ server.price_box.status }}">
-                  <div class="price-box-head">
-                    <div>
-                      <span class="price-box-kicker">{{ server.price_box.title }}</span>
-                      <p class="price-box-subtitle">{{ server.price_box.subtitle }}</p>
-                    </div>
-                    <a href="{{ server.price_box.source_url }}" class="price-box-link" target="_blank" rel="noreferrer">{{ server.price_box.source_label }}</a>
-                  </div>
-                  <div class="price-box-grid">
-                    <div class="price-box-stat">
-                      <span>{{ server.price_box.current_label }}</span>
-                      <strong>{{ server.price_box.current_value_text }}</strong>
-                    </div>
-                    <div class="price-box-stat">
-                      <span>{{ server.price_box.average_label }}</span>
-                      <strong>{{ server.price_box.average_value_text }}</strong>
-                    </div>
-                    <form method="post" action="{{ url_for('action') }}" class="price-box-stat threshold-inline-form">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                      <input type="hidden" name="scope" value="setting">
-                      <input type="hidden" name="server_id" value="{{ server.id }}">
-                      <input type="hidden" name="setting_id" value="msi_auto_poweroff_threshold">
-                      <label class="threshold-inline-label">
-                        <span>{{ server.price_box.threshold_label }}</span>
-                        <input type="number" name="value" min="0.001" max="100" step="0.001" value="{{ '%.3f'|format(server.price_box.threshold_value or 0) }}" inputmode="decimal">
-                      </label>
-                      <button type="submit" class="ghost">Save</button>
-                    </form>
-                  </div>
-                  <div class="price-box-meta">
-                    <small>{{ server.price_box.period_text }}</small>
-                    <small>{{ server.price_box.meta_text }}</small>
-                  </div>
-                  {% if server.price_box.status_note %}
-                    <p class="muted tiny">{{ server.price_box.status_note }}</p>
-                  {% endif %}
-                </article>
-              </div>
-            {% endif %}
-            <p>Server data is currently unavailable.</p>
-            <p class="muted">{{ snapshot.error or 'SSH connection failed.' }}</p>
-            {% if server.host_actions %}
-              {% for host_action in server.host_actions %}
-                {% if host_action.show_when_offline %}
-                  <form method="post" action="{{ url_for('action') }}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <input type="hidden" name="scope" value="host">
-                    <input type="hidden" name="server_id" value="{{ server.id }}">
-                    <input type="hidden" name="action" value="{{ host_action.id }}">
-                    <button type="submit" class="primary">{{ host_action.label }}</button>
-                  </form>
-                {% endif %}
-              {% endfor %}
-            {% endif %}
-          </div>
-        {% endif %}
-      </section>
-    {% endfor %}
-        </div>
-      </section>
-    {% endif %}
   </main>
 
   <div class="exercise-modal" data-role="exercise-modal" hidden>
@@ -1240,7 +1026,7 @@
     const pollMs = {{ state.client_poll_seconds * 1000 }};
     const csrfToken = "{{ csrf_token }}";
     const defaultTabId = "{{ state.default_tab }}";
-    const tabStorageKey = "controldeck-active-tab-" + {{ state.viewer_username|tojson }};
+    const tabStorageKey = "healthhub-active-tab-" + {{ state.viewer_username|tojson }};
     const iranTimeZone = "Asia/Tehran";
     const clockFormatters = {
       gregorianTime: new Intl.DateTimeFormat("en-GB-u-ca-gregory", {
@@ -1344,52 +1130,6 @@
         .replace(/>/g, "&gt;")
         .replace(/\"/g, "&quot;")
         .replace(/'/g, "&#39;");
-    }
-
-    function renderSparkline(metric) {
-      const chart = metric.chart || {};
-      const areaPaths = (chart.area_paths || [])
-        .map((path) => `<path class="sparkline-area" d="${escapeHtml(path)}"></path>`)
-        .join("");
-      const linePaths = (chart.line_paths || [])
-        .map((path) => `<path class="sparkline-line" d="${escapeHtml(path)}"></path>`)
-        .join("");
-      const dot = chart.has_data
-        ? `<circle class="sparkline-dot" cx="${chart.last_x}" cy="${chart.last_y}" r="2.8"></circle>`
-        : "";
-
-      return `
-        <div class="sparkline-wrap">
-          <div class="sparkline-head">
-            <small>${escapeHtml(chart.window_label || "Last 10 min")}</small>
-            <small data-role="metric-samples">${escapeHtml(chart.sample_count ?? 0)} samples</small>
-          </div>
-          <svg
-            class="sparkline"
-            viewBox="0 0 ${chart.width || 164} ${chart.height || 50}"
-            preserveAspectRatio="none"
-            role="img"
-            aria-label="${escapeHtml(metric.label)} trend over the last 10 minutes"
-          >
-            <rect class="sparkline-frame" x="0.5" y="0.5" width="${(chart.width || 164) - 1}" height="${(chart.height || 50) - 1}" rx="10"></rect>
-            <path class="sparkline-guide" d="M 0 ${chart.mid_y || 25} L ${chart.width || 164} ${chart.mid_y || 25}"></path>
-            ${areaPaths}
-            ${linePaths}
-            ${dot}
-          </svg>
-        </div>
-      `;
-    }
-
-    function renderMetricCard(metric) {
-      return `
-        <article class="metric-tile ${escapeHtml(metric.css_class)}" data-metric-key="${escapeHtml(metric.key)}">
-          <span>${escapeHtml(metric.label)}</span>
-          <strong data-role="metric-value">${escapeHtml(metric.value_text)}</strong>
-          ${renderSparkline(metric)}
-          <small data-role="metric-detail">${escapeHtml(metric.detail_text)}</small>
-        </article>
-      `;
     }
 
     function updateCalendarClock() {
@@ -1860,57 +1600,6 @@
           dot.addEventListener('click', () => showTooltip(dot));
         });
       });
-    }
-
-    function renderPriceBox(box) {
-      if (!box) {
-        return "";
-      }
-
-      const thresholdValue = Number.isFinite(Number(box.threshold_value))
-        ? Number(box.threshold_value).toFixed(3)
-        : "";
-      const note = box.status_note
-        ? `<p class="muted tiny">${escapeHtml(box.status_note)}</p>`
-        : "";
-
-      return `
-        <article class="price-box ${escapeHtml(box.status || "live")}">
-          <div class="price-box-head">
-            <div>
-              <span class="price-box-kicker">${escapeHtml(box.title || "Fortum Spot FI")}</span>
-              <p class="price-box-subtitle">${escapeHtml(box.subtitle || "")}</p>
-            </div>
-            <a href="${escapeHtml(box.source_url || "#")}" class="price-box-link" target="_blank" rel="noreferrer">${escapeHtml(box.source_label || "Fortum")}</a>
-          </div>
-          <div class="price-box-grid">
-            <div class="price-box-stat">
-              <span>${escapeHtml(box.current_label || "Current")}</span>
-              <strong>${escapeHtml(box.current_value_text || "n/a")}</strong>
-            </div>
-            <div class="price-box-stat">
-              <span>${escapeHtml(box.average_label || "Today Avg")}</span>
-              <strong>${escapeHtml(box.average_value_text || "n/a")}</strong>
-            </div>
-            <form method="post" action="{{ url_for('action') }}" class="price-box-stat threshold-inline-form">
-              <input type="hidden" name="csrf_token" value="${escapeHtml(csrfToken)}">
-              <input type="hidden" name="scope" value="setting">
-              <input type="hidden" name="server_id" value="118">
-              <input type="hidden" name="setting_id" value="msi_auto_poweroff_threshold">
-              <label class="threshold-inline-label">
-                <span>${escapeHtml(box.threshold_label || "Auto Off >")}</span>
-                <input type="number" name="value" min="0.001" max="100" step="0.001" value="${escapeHtml(thresholdValue)}" inputmode="decimal">
-              </label>
-              <button type="submit" class="ghost">Save</button>
-            </form>
-          </div>
-          <div class="price-box-meta">
-            <small>${escapeHtml(box.period_text || "")}</small>
-            <small>${escapeHtml(box.meta_text || "")}</small>
-          </div>
-          ${note}
-        </article>
-      `;
     }
 
     function coachActionPillClass(status) {
@@ -2449,37 +2138,6 @@
       });
     }
 
-    function updateServerCard(server) {
-      const card = document.querySelector(`[data-server-id="${server.id}"]`);
-      if (!card) {
-        return;
-      }
-
-      const hostLine = card.querySelector('[data-role="server-host"]');
-      if (hostLine) {
-        const hostText = server.host + (server.snapshot && server.snapshot.hostname ? ` | ${server.snapshot.hostname}` : "");
-        hostLine.textContent = hostText;
-      }
-
-      const status = card.querySelector('[data-role="server-status"]');
-      if (status) {
-        const isOnline = Boolean(server.snapshot && server.snapshot.reachable);
-        status.textContent = isOnline ? "Online" : "Offline";
-        status.classList.remove("online", "offline");
-        status.classList.add(isOnline ? "online" : "offline");
-      }
-
-      const metricGrid = card.querySelector('[data-role="metric-grid"]');
-      if (metricGrid && Array.isArray(server.metrics)) {
-        metricGrid.innerHTML = server.metrics.map(renderMetricCard).join("");
-      }
-
-      const priceBoxSlot = card.querySelector('[data-role="price-box-slot"]');
-      if (priceBoxSlot) {
-        priceBoxSlot.innerHTML = renderPriceBox(server.price_box);
-      }
-    }
-
     async function fetchLiveState() {
       try {
         const response = await fetch(apiUrl, {
@@ -2501,7 +2159,6 @@
         if (state.assistant) {
           updateCoachView(state.assistant);
         }
-        (state.servers || []).forEach(updateServerCard);
         wireCopyButtons();
       } catch (error) {
         console.debug("Live dashboard update failed", error);
