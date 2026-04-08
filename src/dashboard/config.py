@@ -7,14 +7,8 @@ REFRESH_SECONDS = int(os.getenv("DASHBOARD_REFRESH_SECONDS", "20"))
 CLIENT_POLL_SECONDS = int(os.getenv("DASHBOARD_CLIENT_POLL_SECONDS", "5"))
 SAMPLE_SECONDS = int(os.getenv("DASHBOARD_SAMPLE_SECONDS", str(REFRESH_SECONDS)))
 HISTORY_SECONDS = int(os.getenv("DASHBOARD_HISTORY_SECONDS", "600"))
-FORTUM_SPOT_URL = os.getenv("DASHBOARD_FORTUM_SPOT_URL", "https://www.fortum.com/fi/sahkoa/sahkon-hinta/spot-hinta")
-FORTUM_PRICE_AREA = os.getenv("DASHBOARD_FORTUM_PRICE_AREA", "FI")
-FORTUM_CACHE_SECONDS = int(os.getenv("DASHBOARD_FORTUM_CACHE_SECONDS", "300"))
-DEFAULT_MSI_AUTO_POWEROFF_THRESHOLD = float(os.getenv("DASHBOARD_MSI_AUTO_POWEROFF_THRESHOLD", "2.000"))
-MSI_AUTO_POWEROFF_COOLDOWN_SECONDS = int(os.getenv("DASHBOARD_MSI_AUTO_POWEROFF_COOLDOWN_SECONDS", "1800"))
 APP_ROOT = Path(__file__).resolve().parents[2]
 HISTORY_FILE = Path(os.getenv("DASHBOARD_HISTORY_FILE", str(APP_ROOT / "data" / "history.json")))
-SETTINGS_FILE = Path(os.getenv("DASHBOARD_SETTINGS_FILE", str(APP_ROOT / "data" / "settings.json")))
 GYM_USER_DB_FILE = Path(os.getenv("DASHBOARD_GYM_USER_DB_FILE", str(APP_ROOT / "data" / "gym_user.db")))
 GYM_KNOWLEDGE_DB_FILE = Path(os.getenv("DASHBOARD_GYM_KNOWLEDGE_DB_FILE", str(APP_ROOT / "data" / "gym_knowledge.db")))
 COACH_ATTACHMENTS_DIR = Path(os.getenv("DASHBOARD_COACH_ATTACHMENTS_DIR", str(APP_ROOT / "data" / "coach_uploads")))
@@ -207,8 +201,6 @@ REMOTE118 = {
     "user": os.getenv("REMOTE118_USER", "sam"),
     "port": int(os.getenv("REMOTE118_PORT", "22")),
     "key_path": os.getenv("REMOTE118_KEY_PATH", "/home/sam/.ssh/dashboard_118"),
-    "mac": os.getenv("REMOTE118_MAC", "44:8a:5b:41:79:c0"),
-    "wake_broadcast": os.getenv("REMOTE118_WAKE_BROADCAST", "192.168.1.255"),
 }
 REMOTE_SNAPSHOT_SCRIPT = r"""
 import json

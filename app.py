@@ -11,7 +11,6 @@ import re
 import secrets
 import shlex
 import shutil
-import socket
 import sqlite3
 import subprocess
 import threading
@@ -72,7 +71,6 @@ from src.dashboard.config import (
     DEFAULT_DIET_MEALS_PER_DAY,
     DEFAULT_GYM_DAYS_PER_WEEK,
     DEFAULT_GYM_PREFERRED_MINUTES,
-    DEFAULT_MSI_AUTO_POWEROFF_THRESHOLD,
     DIET_MEAL_COUNT_OPTIONS,
     DIET_MEAL_CUSTOMIZATION_MODES,
     DIET_PLANNER_VERSION,
@@ -81,9 +79,6 @@ from src.dashboard.config import (
     EXERCISE_IMAGE_BASE_URL,
     EXERCISE_MEDIA_CACHE_FILE,
     EXERCISE_MEDIA_CACHE_SECONDS,
-    FORTUM_CACHE_SECONDS,
-    FORTUM_PRICE_AREA,
-    FORTUM_SPOT_URL,
     GRAPH_GAP_SECONDS,
     GRAPH_HEIGHT,
     GRAPH_PADDING,
@@ -96,7 +91,6 @@ from src.dashboard.config import (
     HISTORY_FILE,
     HISTORY_METRICS,
     HISTORY_SECONDS,
-    MSI_AUTO_POWEROFF_COOLDOWN_SECONDS,
     OPENAI_API_BASE_URL,
     OPENAI_API_KEY,
     OPENAI_VISION_DETAIL,
@@ -107,7 +101,6 @@ from src.dashboard.config import (
     REMOTE118,
     REMOTE_SNAPSHOT_SCRIPT,
     SAMPLE_SECONDS,
-    SETTINGS_FILE,
     SUPERAGENT_NAME,
 )
 from src.dashboard.diet import build_diet_agent_prompt
@@ -116,23 +109,14 @@ from src.dashboard.remote import (
     collect_remote_snapshot,
     compose_shell,
     container_shell,
-    local_host_action,
     remote_codex_exec,
-    remote_host_action,
     run_local,
     run_remote,
-    wake_host,
 )
 
-STATE_CACHE = {"updated_at": None, "snapshots": {}, "fortum_box": None}
+STATE_CACHE = {"updated_at": None, "snapshots": {}}
 HISTORY_CACHE = {}
 CACHE_LOCK = threading.Lock()
-SETTINGS_CACHE = None
-SETTINGS_LOCK = threading.Lock()
-FORTUM_CACHE = {"checked_at": 0.0, "payload": None}
-FORTUM_LOCK = threading.Lock()
-AUTO_ACTION_STATE = {"msi_last_poweroff_at": 0.0, "msi_last_price": None}
-AUTO_ACTION_LOCK = threading.Lock()
 SAMPLER_STARTED = False
 GYM_DB_READY = False
 GYM_DB_LOCK = threading.Lock()
@@ -602,11 +586,8 @@ SERVERS = {
         "accent": "teal",
         "local": False,
         "host_actions": [
-            {"id": "wake", "label": "Wake", "button_class": "ghost", "show_when_offline": True},
             {"id": "reboot", "label": "Reboot", "button_class": "warn"},
-            {"id": "poweroff", "label": "Power Off", "button_class": "danger"},
         ],
-        "host_note": "Wake uses Wake-on-LAN. It only works if BIOS and NIC wake support are enabled on server 118.",
         "links": [
             {"label": "LLM", "url": "https://llm.sam-mousavi.com"},
             {"label": "Whisper", "url": "https://whisper.sam-mousavi.com"},
@@ -772,8 +753,6 @@ _LEGACY_REMOTE118 = {
     "user": os.getenv("REMOTE118_USER", "sam"),
     "port": int(os.getenv("REMOTE118_PORT", "22")),
     "key_path": os.getenv("REMOTE118_KEY_PATH", "/home/sam/.ssh/dashboard_118"),
-    "mac": os.getenv("REMOTE118_MAC", "44:8a:5b:41:79:c0"),
-    "wake_broadcast": os.getenv("REMOTE118_WAKE_BROADCAST", "192.168.1.255"),
 }
 
 
@@ -7060,267 +7039,6 @@ def empty_history():
     }
 
 
-def default_settings():
-    return {
-        "msi_auto_poweroff_threshold": DEFAULT_MSI_AUTO_POWEROFF_THRESHOLD,
-    }
-
-
-def load_settings():
-    settings = default_settings()
-    if not SETTINGS_FILE.exists():
-        return settings
-    try:
-        payload = json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return settings
-    raw_value = payload.get("msi_auto_poweroff_threshold")
-    if raw_value is not None:
-        try:
-            settings["msi_auto_poweroff_threshold"] = float(raw_value)
-        except (TypeError, ValueError):
-            pass
-    return settings
-
-
-def save_settings(settings):
-    SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    SETTINGS_FILE.write_text(json.dumps(settings, indent=2), encoding="utf-8")
-
-
-def current_settings():
-    global SETTINGS_CACHE
-    with SETTINGS_LOCK:
-        if SETTINGS_CACHE is None:
-            SETTINGS_CACHE = load_settings()
-        return copy.deepcopy(SETTINGS_CACHE)
-
-
-def current_msi_auto_poweroff_threshold():
-    settings = current_settings()
-    return float(settings.get("msi_auto_poweroff_threshold", DEFAULT_MSI_AUTO_POWEROFF_THRESHOLD))
-
-
-def update_msi_auto_poweroff_threshold(value: float):
-    global SETTINGS_CACHE
-    rounded = round(float(value), 3)
-    with SETTINGS_LOCK:
-        if SETTINGS_CACHE is None:
-            SETTINGS_CACHE = load_settings()
-        SETTINGS_CACHE["msi_auto_poweroff_threshold"] = rounded
-        save_settings(SETTINGS_CACHE)
-
-
-def reset_fortum_cache():
-    with FORTUM_LOCK:
-        FORTUM_CACHE["checked_at"] = 0.0
-        FORTUM_CACHE["payload"] = None
-
-
-def fortum_box_base(threshold_value: float | None = None):
-    threshold_value = current_msi_auto_poweroff_threshold() if threshold_value is None else float(threshold_value)
-    return {
-        "title": "Fortum Spot FI",
-        "subtitle": "Current consumer spot price and today's average, incl. VAT",
-        "current_label": "Current",
-        "current_value_text": "n/a",
-        "current_value": None,
-        "average_label": "Today Avg",
-        "average_value_text": "n/a",
-        "average_value": None,
-        "threshold_label": "Auto Off >",
-        "threshold_value_text": "n/a",
-        "threshold_value": threshold_value,
-        "unit": "c/kWh",
-        "period_text": "Current interval unavailable",
-        "meta_text": "Fortum source unavailable",
-        "source_label": "Fortum",
-        "source_url": FORTUM_SPOT_URL,
-        "status": "error",
-        "status_note": "",
-    }
-
-
-def format_price_value(value, unit: str):
-    if value is None:
-        return "n/a"
-    return f"{float(value):.3f} {unit}"
-
-
-def format_clock_label(value: datetime | None):
-    if value is None:
-        return "--:--"
-    return value.strftime("%H:%M")
-
-
-def append_status_note(existing: str, extra: str):
-    if not existing:
-        return extra
-    return f"{existing} {extra}"
-
-
-def append_recent_auto_poweroff_note(box: dict, now_ts: float):
-    with AUTO_ACTION_LOCK:
-        last_poweroff_at = AUTO_ACTION_STATE["msi_last_poweroff_at"]
-        last_price = AUTO_ACTION_STATE["msi_last_price"]
-    if not last_poweroff_at or now_ts - last_poweroff_at >= MSI_AUTO_POWEROFF_COOLDOWN_SECONDS:
-        return box
-    price_text = format_price_value(last_price, box.get("unit", "c/kWh")) if last_price is not None else box.get("current_value_text", "n/a")
-    box["status_note"] = append_status_note(
-        box.get("status_note", ""),
-        f"Last auto power-off was sent at {time.strftime('%H:%M', time.localtime(last_poweroff_at))} because current price reached {price_text}.",
-    )
-    return box
-
-
-def infer_series_step(series_entries):
-    if len(series_entries) < 2:
-        return timedelta(hours=1)
-    deltas = [
-        later[0] - earlier[0]
-        for earlier, later in zip(series_entries, series_entries[1:])
-        if later[0] > earlier[0]
-    ]
-    return deltas[0] if deltas else timedelta(hours=1)
-
-
-def find_current_price_entry(series_entries, step: timedelta, now_local: datetime):
-    for index, (start_at, price_value) in enumerate(series_entries):
-        end_at = series_entries[index + 1][0] if index + 1 < len(series_entries) else start_at + step
-        if start_at <= now_local < end_at:
-            return start_at, end_at, price_value
-    if now_local < series_entries[0][0]:
-        first_start, first_value = series_entries[0]
-        first_end = series_entries[1][0] if len(series_entries) > 1 else first_start + step
-        return first_start, first_end, first_value
-    last_start, last_value = series_entries[-1]
-    return last_start, last_start + step, last_value
-
-
-def parse_fortum_spot_series(html: str):
-    normalized = html.replace('\\"', '"')
-    pattern = re.compile(
-        rf'"priceArea":"{re.escape(FORTUM_PRICE_AREA)}","priceUnit":"([^"]+)","spotPriceSeries":\[(.*?)\],"__typename":"AreaPrices"',
-        re.S,
-    )
-    matches = pattern.findall(normalized)
-    if not matches:
-        raise ValueError("Fortum FI price series was not found in the page")
-    unit, series_blob = max(matches, key=lambda item: item[1].count('"atLocal":"'))
-    series = json.loads("[" + series_blob + "]")
-    if not series:
-        raise ValueError("Fortum FI price series was empty")
-    return unit, series
-
-
-def fetch_fortum_spot_box():
-    threshold_value = current_msi_auto_poweroff_threshold()
-    request = urllib.request.Request(
-        FORTUM_SPOT_URL,
-        headers={
-            "User-Agent": "Mozilla/5.0",
-            "Accept-Language": "fi-FI,fi;q=0.9,en;q=0.7",
-        },
-    )
-    with urllib.request.urlopen(request, timeout=20) as response:
-        charset = response.headers.get_content_charset() or "utf-8"
-        html = response.read().decode(charset, errors="replace")
-
-    unit, raw_series = parse_fortum_spot_series(html)
-    series_entries = []
-    for item in raw_series:
-        at_local = item.get("atLocal")
-        price_total = item.get("spotPrice", {}).get("total")
-        if not at_local or price_total is None:
-            continue
-        series_entries.append((datetime.fromisoformat(at_local), float(price_total)))
-    if not series_entries:
-        raise ValueError("Fortum FI series did not include usable price points")
-
-    series_entries.sort(key=lambda item: item[0])
-    step = infer_series_step(series_entries)
-    now_local = datetime.now(series_entries[0][0].tzinfo)
-    current_start, current_end, current_value = find_current_price_entry(series_entries, step, now_local)
-    average_value = sum(price for _, price in series_entries) / len(series_entries)
-
-    payload = fortum_box_base(threshold_value)
-    payload.update(
-        {
-            "status": "live",
-            "unit": unit,
-            "current_value_text": format_price_value(current_value, unit),
-            "current_value": current_value,
-            "average_value_text": format_price_value(average_value, unit),
-            "average_value": average_value,
-            "threshold_value_text": format_price_value(threshold_value, unit),
-            "period_text": f"{format_clock_label(current_start)}-{format_clock_label(current_end)} local interval",
-            "meta_text": f"Updated {format_clock_label(now_local)}",
-        }
-    )
-    return payload
-
-
-def current_fortum_spot_box():
-    now_ts = time.time()
-    with FORTUM_LOCK:
-        checked_at = FORTUM_CACHE["checked_at"]
-        cached_payload = copy.deepcopy(FORTUM_CACHE["payload"])
-    if cached_payload and now_ts - checked_at < FORTUM_CACHE_SECONDS:
-        return cached_payload
-
-    try:
-        payload = fetch_fortum_spot_box()
-    except Exception:
-        if cached_payload:
-            cached_payload["status"] = "stale"
-            cached_payload["status_note"] = "Source refresh failed. Showing last good values."
-            with FORTUM_LOCK:
-                FORTUM_CACHE["checked_at"] = now_ts
-                FORTUM_CACHE["payload"] = copy.deepcopy(cached_payload)
-            return cached_payload
-        payload = fortum_box_base()
-        payload["status_note"] = "Fortum source did not return a usable price feed."
-    with FORTUM_LOCK:
-        FORTUM_CACHE["checked_at"] = now_ts
-        FORTUM_CACHE["payload"] = copy.deepcopy(payload)
-    return payload
-
-
-def apply_msi_auto_poweroff(snapshot_118: dict, fortum_box: dict):
-    if not fortum_box:
-        return fortum_box
-
-    box = copy.deepcopy(fortum_box)
-    now_ts = time.time()
-    box = append_recent_auto_poweroff_note(box, now_ts)
-    current_value = box.get("current_value")
-    threshold_value = current_msi_auto_poweroff_threshold()
-    box["threshold_value"] = threshold_value
-    box["threshold_value_text"] = format_price_value(threshold_value, box.get("unit", "c/kWh"))
-    if box.get("status") != "live" or current_value is None or not snapshot_118.get("reachable"):
-        return box
-    if current_value <= threshold_value:
-        return box
-
-    with AUTO_ACTION_LOCK:
-        last_poweroff_at = AUTO_ACTION_STATE["msi_last_poweroff_at"]
-    if now_ts - last_poweroff_at < MSI_AUTO_POWEROFF_COOLDOWN_SECONDS:
-        return box
-
-    try:
-        remote_host_action("poweroff")
-        with AUTO_ACTION_LOCK:
-            AUTO_ACTION_STATE["msi_last_poweroff_at"] = now_ts
-            AUTO_ACTION_STATE["msi_last_price"] = current_value
-        box = append_recent_auto_poweroff_note(box, now_ts)
-    except Exception as exc:
-        box["status_note"] = append_status_note(
-            box.get("status_note", ""),
-            f"Auto power-off failed: {exc}",
-        )
-    return box
-
-
 def load_history():
     history = empty_history()
     if not HISTORY_FILE.exists():
@@ -7401,8 +7119,6 @@ def refresh_state_once():
         "106": collect_local_snapshot(),
         "118": collect_remote_snapshot(),
     }
-    fortum_box = current_fortum_spot_box()
-    fortum_box = apply_msi_auto_poweroff(snapshots["118"], fortum_box)
     updated_at = int(time.time())
     with CACHE_LOCK:
         if not HISTORY_CACHE:
@@ -7412,7 +7128,6 @@ def refresh_state_once():
         trim_history(HISTORY_CACHE, updated_at)
         STATE_CACHE["updated_at"] = updated_at
         STATE_CACHE["snapshots"] = snapshots
-        STATE_CACHE["fortum_box"] = fortum_box
         save_history(HISTORY_CACHE)
 
 
@@ -7446,7 +7161,6 @@ def current_cached_state():
                 STATE_CACHE["updated_at"],
                 copy.deepcopy(STATE_CACHE["snapshots"]),
                 copy.deepcopy(HISTORY_CACHE or empty_history()),
-                copy.deepcopy(STATE_CACHE.get("fortum_box")),
             )
     if not HISTORY_CACHE:
         HISTORY_CACHE = load_history()
@@ -7456,7 +7170,6 @@ def current_cached_state():
             STATE_CACHE["updated_at"],
             copy.deepcopy(STATE_CACHE["snapshots"]),
             copy.deepcopy(HISTORY_CACHE or empty_history()),
-            copy.deepcopy(STATE_CACHE.get("fortum_box")),
         )
 
 
@@ -7873,7 +7586,7 @@ def _legacy_run_remote(command: str, timeout: int = 25):
 
 
 def agent_host_online() -> bool:
-    _, snapshots, _, _ = current_cached_state()
+    _, snapshots, _ = current_cached_state()
     return bool((snapshots.get("118") or {}).get("reachable"))
 
 
@@ -8003,17 +7716,16 @@ def enrich_services(server_id: str, snapshot: dict):
     return services
 
 
-def server_state(server_id: str, snapshot: dict, server_history: dict, updated_at: int | None, fortum_box: dict | None = None):
+def server_state(server_id: str, snapshot: dict, server_history: dict, updated_at: int | None):
     server = SERVERS[server_id].copy()
     server["snapshot"] = snapshot
     server["services"] = enrich_services(server_id, snapshot)
     server["metrics"] = build_metric_tiles(snapshot, server_history, updated_at)
-    server["price_box"] = copy.deepcopy(fortum_box) if server_id == "118" and fortum_box else None
     return server
 
 
 def build_dashboard(username: str | None = None, preferred_tab: str | None = None, gym_day: str | None = None):
-    updated_at, snapshots, history, fortum_box = current_cached_state()
+    updated_at, snapshots, history = current_cached_state()
     current_username = normalize_username(username if username is not None else viewer_username())
     viewer_display_name = display_name_for_username(current_username or dashboard_username())
     agent_available = bool((snapshots.get("118") or {}).get("reachable"))
@@ -8088,26 +7800,10 @@ def remote_service_action(service: dict, action: str):
     return completed
 
 
-def _legacy_wake_host(mac: str, broadcast: str):
-    normalized = mac.replace("-", "").replace(":", "").strip()
-    if len(normalized) != 12:
-        raise ValueError("Invalid MAC address")
-    payload = bytes.fromhex("FF" * 6 + normalized * 16)
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        sock.sendto(payload, (broadcast, 9))
-
-
 def _legacy_remote_host_action(action: str):
-    if action == "wake":
-        wake_host(REMOTE118["mac"], REMOTE118["wake_broadcast"])
-        return "Wake-on-LAN packet sent to server 118."
     if action == "reboot":
         run_remote("bash -lc 'sudo -n systemctl reboot >/dev/null 2>&1 &'")
         return "Reboot command sent to server 118."
-    if action == "poweroff":
-        run_remote("bash -lc 'sudo -n systemctl poweroff >/dev/null 2>&1 &'")
-        return "Poweroff command sent to server 118."
     raise ValueError("Unsupported host action")
 
 

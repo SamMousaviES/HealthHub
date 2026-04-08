@@ -1,7 +1,6 @@
 import base64
 import json
 import shlex
-import socket
 import subprocess
 
 import paramiko
@@ -175,26 +174,10 @@ def container_shell(containers, action: str, sudo_prefix: str = "") -> str:
     return f"{sudo_prefix}docker {verb} {safe_names}"
 
 
-def wake_host(mac: str, broadcast: str):
-    normalized = mac.replace("-", "").replace(":", "").strip()
-    if len(normalized) != 12:
-        raise ValueError("Invalid MAC address")
-    payload = bytes.fromhex("FF" * 6 + normalized * 16)
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        sock.sendto(payload, (broadcast, 9))
-
-
 def remote_host_action(action: str):
-    if action == "wake":
-        wake_host(REMOTE118["mac"], REMOTE118["wake_broadcast"])
-        return "Wake-on-LAN packet sent to server 118."
     if action == "reboot":
         run_remote("bash -lc 'sudo -n systemctl reboot >/dev/null 2>&1 &'")
         return "Reboot command sent to server 118."
-    if action == "poweroff":
-        run_remote("bash -lc 'sudo -n systemctl poweroff >/dev/null 2>&1 &'")
-        return "Poweroff command sent to server 118."
     raise ValueError("Unsupported host action")
 
 
